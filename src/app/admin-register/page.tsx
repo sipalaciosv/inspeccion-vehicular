@@ -10,16 +10,15 @@ export default function AdminRegister() {
   const [secretKey, setSecretKey] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState(""); // ✅ Se usa correctamente
   const router = useRouter();
 
   const SECRET_PASSCODE = process.env.NEXT_PUBLIC_SECRET_PASSCODE;
 
   const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setError("");
+    setError(""); // ✅ Limpiamos el error al iniciar
 
-    // ✅ Permitir acceso solo si la clave secreta es correcta
     if (secretKey !== SECRET_PASSCODE) {
       setError("❌ Clave secreta incorrecta");
       return;
@@ -29,7 +28,6 @@ export default function AdminRegister() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // ✅ Registrar al usuario como admin en Firestore
       await setDoc(doc(db, "usuarios", user.uid), {
         email: user.email,
         role: "admin",
@@ -37,8 +35,8 @@ export default function AdminRegister() {
 
       alert("✅ Administrador registrado con éxito");
       router.push("/admin");
-    } catch (error) {
-      setError("❌ Error al registrar administrador");
+    } catch (err) {
+      setError("❌ Error al registrar administrador: " + (err as Error).message);
     }
   };
 
@@ -46,7 +44,7 @@ export default function AdminRegister() {
     <div className="container py-5">
       <h2 className="text-center">Registro de Administrador 🔐</h2>
       <form onSubmit={handleRegister} className="card p-4 mx-auto" style={{ maxWidth: "400px" }}>
-        {error && <div className="alert alert-danger">{error}</div>}
+        {error && <div className="alert alert-danger">{error}</div>} {/* ✅ Muestra el error si existe */}
         <div className="mb-3">
           <label>Clave Secreta</label>
           <input
