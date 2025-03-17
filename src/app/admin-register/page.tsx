@@ -10,7 +10,7 @@ export default function AdminRegister() {
   const [secretKey, setSecretKey] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string>(""); // Tipado correctamente
+  const [error, setError] = useState("");
   const router = useRouter();
 
   const SECRET_PASSCODE = process.env.NEXT_PUBLIC_SECRET_PASSCODE;
@@ -19,31 +19,26 @@ export default function AdminRegister() {
     e.preventDefault();
     setError("");
 
-    // ✅ Verifica si la clave secreta es correcta
+    // ✅ Permitir acceso solo si la clave secreta es correcta
     if (secretKey !== SECRET_PASSCODE) {
       setError("❌ Clave secreta incorrecta");
       return;
     }
 
     try {
-      // ✅ Crear usuario en Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // ✅ Guardar en Firestore como admin
+      // ✅ Registrar al usuario como admin en Firestore
       await setDoc(doc(db, "usuarios", user.uid), {
         email: user.email,
         role: "admin",
       });
 
       alert("✅ Administrador registrado con éxito");
-      router.push("/admin"); // Redirigir al panel de administración
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(`❌ Error: ${err.message}`);
-      } else {
-        setError("❌ Error desconocido al registrar administrador");
-      }
+      router.push("/admin");
+    } catch (error) {
+      setError("❌ Error al registrar administrador");
     }
   };
 
@@ -52,7 +47,6 @@ export default function AdminRegister() {
       <h2 className="text-center">Registro de Administrador 🔐</h2>
       <form onSubmit={handleRegister} className="card p-4 mx-auto" style={{ maxWidth: "400px" }}>
         {error && <div className="alert alert-danger">{error}</div>}
-
         <div className="mb-3">
           <label>Clave Secreta</label>
           <input
@@ -63,7 +57,6 @@ export default function AdminRegister() {
             onChange={(e) => setSecretKey(e.target.value)}
           />
         </div>
-
         <div className="mb-3">
           <label>Email</label>
           <input
@@ -74,7 +67,6 @@ export default function AdminRegister() {
             onChange={(e) => setEmail(e.target.value)}
           />
         </div>
-
         <div className="mb-3">
           <label>Contraseña</label>
           <input
@@ -85,7 +77,6 @@ export default function AdminRegister() {
             onChange={(e) => setPassword(e.target.value)}
           />
         </div>
-
         <button type="submit" className="btn btn-primary w-100">Registrar Administrador</button>
       </form>
     </div>
