@@ -3,11 +3,10 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { auth } from "@/firebase";
-import { onAuthStateChanged, signOut } from "firebase/auth";
+import { onAuthStateChanged, signOut, User } from "firebase/auth";
 import { useRouter } from "next/navigation";
 
 export default function AdminNavbar() {
-  const [user, setUser] = useState<any>(null);
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
 
@@ -15,8 +14,6 @@ export default function AdminNavbar() {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (!currentUser) {
         router.push("/login"); // Redirigir si no está autenticado
-      } else {
-        setUser(currentUser);
       }
     });
     return () => unsubscribe();

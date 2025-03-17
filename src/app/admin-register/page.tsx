@@ -10,7 +10,7 @@ export default function AdminRegister() {
   const [secretKey, setSecretKey] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string>(""); // ✅ Especificamos el tipo string
   const router = useRouter();
 
   const SECRET_PASSCODE = process.env.NEXT_PUBLIC_SECRET_PASSCODE;
@@ -38,8 +38,12 @@ export default function AdminRegister() {
 
       alert("✅ Administrador registrado con éxito");
       router.push("/admin"); // Redirigir al panel de administración
-    } catch (error: any) {
-      setError("❌ Error al registrar administrador");
+    } catch (err: unknown) { // ✅ Usamos unknown en lugar de any
+      if (err instanceof Error) {
+        setError(`❌ ${err.message}`); // ✅ Mostramos el error si es una instancia de Error
+      } else {
+        setError("❌ Error desconocido al registrar administrador");
+      }
     }
   };
 

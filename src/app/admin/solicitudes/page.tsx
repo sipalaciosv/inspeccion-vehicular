@@ -4,13 +4,21 @@ import { useEffect, useState } from "react";
 import { db } from "@/firebase";
 import { collection, getDocs, updateDoc, doc } from "firebase/firestore";
 
+// ✅ Definimos una interfaz para los formularios
+interface Formulario {
+  id: string;
+  conductor: string;
+  fecha_inspeccion: string;
+  estado: "pendiente" | "aprobado" | "rechazado"; // Estados posibles
+}
+
 export default function Solicitudes() {
-  const [formularios, setFormularios] = useState<any[]>([]);
+  const [formularios, setFormularios] = useState<Formulario[]>([]); // ✅ Usamos el tipo correcto
 
   useEffect(() => {
     const fetchFormularios = async () => {
       const snapshot = await getDocs(collection(db, "formularios"));
-      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Formulario)); // ✅ Forzamos el tipo
       setFormularios(data);
     };
 
@@ -44,7 +52,11 @@ export default function Solicitudes() {
             <tr key={f.id}>
               <td>{f.conductor}</td>
               <td>{f.fecha_inspeccion}</td>
-              <td><span className={`badge bg-${f.estado === "pendiente" ? "warning" : f.estado === "aprobado" ? "success" : "danger"}`}>{f.estado}</span></td>
+              <td>
+                <span className={`badge bg-${f.estado === "pendiente" ? "warning" : f.estado === "aprobado" ? "success" : "danger"}`}>
+                  {f.estado}
+                </span>
+              </td>
               <td>
                 {f.estado === "pendiente" && (
                   <>

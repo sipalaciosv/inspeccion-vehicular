@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 import { auth, db } from "@/firebase";
 import { useRouter } from "next/navigation";
-import { signOut } from "firebase/auth";
+import { signOut, User } from "firebase/auth"; // 🔹 Importamos User
 import { doc, getDoc } from "firebase/firestore";
 
 export default function AdminPanel() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null); // ✅ Ahora usamos User en lugar de any
   const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
 
