@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { auth } from "@/firebase";
-import { onAuthStateChanged, signOut, User } from "firebase/auth";
+import { onAuthStateChanged, signOut} from "firebase/auth";
 import { useRouter } from "next/navigation";
 
 export default function AdminNavbar() {

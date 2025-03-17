@@ -15,8 +15,12 @@ export default function ForgotPassword() {
     try {
       await sendPasswordResetEmail(auth, email);
       setMessage("✅ Se ha enviado un correo para restablecer la contraseña.");
-    } catch (error) {
-      setMessage("❌ Error al enviar el correo. Verifica el email.");
+    } catch (err: unknown) { // 🔹 Cambiar `error` por `err: unknown`
+      if (err instanceof Error) {
+        setMessage(`❌ ${err.message}`); // 🔹 Mostramos el error específico si es una instancia de `Error`
+      } else {
+        setMessage("❌ Error desconocido al enviar el correo. Verifica el email.");
+      }
     }
   };
 

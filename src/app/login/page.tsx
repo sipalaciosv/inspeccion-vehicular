@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string>(""); // 🔹 Se tipa como string
   const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -18,8 +18,12 @@ export default function Login() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       router.push("/admin"); // Redirigir al Panel de Admin
-    } catch (error: any) {
-      setError("Correo o contraseña incorrectos.");
+    } catch (err: unknown) { // 🔹 Usamos `unknown` en lugar de `any`
+      if (err instanceof Error) {
+        setError(err.message); // 🔹 Mostramos el mensaje de error real
+      } else {
+        setError("❌ Ocurrió un error al iniciar sesión.");
+      }
     }
   };
 
