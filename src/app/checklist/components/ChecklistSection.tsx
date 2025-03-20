@@ -1,4 +1,3 @@
-import { useState } from "react";
 import type { FormData } from "../page";
 
 interface ChecklistSectionProps {
