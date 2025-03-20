@@ -12,13 +12,17 @@
     "axios": "^1.8.4",
     "bootstrap": "^5.3.3",
     "cloudinary": "^2.6.0",
+    "dotenv": "^16.4.7",
     "firebase": "^11.4.0",
+    "jspdf": "^3.0.1",
+    "jspdf-autotable": "^5.0.2",
     "next": "15.2.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@types/bootstrap": "^5.2.10",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

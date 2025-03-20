@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import LayoutWrapper from "./components/LayoutWrapper";
 
+
 export const metadata: Metadata = {
   title: "Inspección Vehicular",
   description: "Sistema de Inspección y Declaración de Fatiga",
