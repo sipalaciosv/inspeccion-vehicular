@@ -1,10 +1,11 @@
-import { FormData } from "../page";
+import { useState } from "react";
+import type { FormData } from "../page";
 
 interface ChecklistSectionProps {
   form: FormData;
   setForm: React.Dispatch<React.SetStateAction<FormData>>;
+  setImages: React.Dispatch<React.SetStateAction<{ [key: string]: File | null }>>;
 }
-
 const secciones: { [key: string]: string[] } = {
   "Sistema de Luces": [
     "Luz delantera alta", "Luz delantera baja", "Luces de emergencia", 
@@ -35,8 +36,7 @@ const secciones: { [key: string]: string[] } = {
     "Licencia de conducir", "Tarjeta SiB"
   ],
 };
-
-export default function ChecklistSection({ form, setForm }: ChecklistSectionProps) {
+export default function ChecklistSection({ form, setForm, setImages }: ChecklistSectionProps) {
   const opciones = ["B", "M", "NA"];
 
   const handleCheckboxChange = (item: string, opcion: string) => {
@@ -44,6 +44,10 @@ export default function ChecklistSection({ form, setForm }: ChecklistSectionProp
       ...prevForm,
       checklist: { ...prevForm.checklist, [item]: opcion },
     }));
+  };
+
+  const handleFileChange = (item: string, file: File | null) => {
+    setImages(prev => ({ ...prev, [item]: file }));
   };
 
   return (
@@ -57,6 +61,7 @@ export default function ChecklistSection({ form, setForm }: ChecklistSectionProp
                 <tr>
                   <th>Ítem</th>
                   {opciones.map(op => <th key={op} className="text-center">{op}</th>)}
+                  <th>Imagen</th>
                 </tr>
               </thead>
               <tbody>
@@ -74,6 +79,13 @@ export default function ChecklistSection({ form, setForm }: ChecklistSectionProp
                         />
                       </td>
                     ))}
+                    <td>
+                      {form.checklist[item] === "M" && (
+                        <div>
+                          <input type="file" onChange={(e) => handleFileChange(item, e.target.files?.[0] || null)} />
+                        </div>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
