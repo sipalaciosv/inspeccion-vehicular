@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { db } from "@/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { useParams } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
 
 interface Formulario {
   id: string;
@@ -110,15 +112,16 @@ export default function DetalleSolicitud() {
                   <td>
   {estado.startsWith("https://") ? (
     <>
-      <img
-        src={estado}
-        alt="Imagen del problema"
-        className="img-thumbnail"
-        width="100"
-        data-bs-toggle="modal"
-        data-bs-target={`#modal-${item.replace(/\s+/g, "-")}`}
-        style={{ cursor: "pointer" }}
-      />
+      <Image
+  src={estado}
+  alt="Imagen del problema"
+  width={100}
+  height={100}
+  className="img-thumbnail"
+  data-bs-toggle="modal"
+  data-bs-target={`#modal-${item.replace(/\s+/g, "-")}`}
+  style={{ cursor: "pointer" }}
+/>
       {/* Modal de Bootstrap */}
       <div className="modal fade" id={`modal-${item.replace(/\s+/g, "-")}`} tabIndex={-1} aria-hidden="true">
         <div className="modal-dialog modal-lg">
@@ -128,7 +131,8 @@ export default function DetalleSolicitud() {
               <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
             <div className="modal-body text-center">
-              <img src={estado} alt="Imagen del problema" className="img-fluid" />
+            <Image src={estado} alt="Imagen del problema" width={800} height={600} className="img-fluid" />
+
             </div>
           </div>
         </div>
@@ -148,7 +152,9 @@ export default function DetalleSolicitud() {
 
       {/* Botón para regresar */}
       <div className="text-center mt-4">
-        <a href="/admin/solicitudes" className="btn btn-secondary">⬅ Volver</a>
+      <Link href="/admin/solicitudes" className="btn btn-secondary">
+  ⬅ Volver
+</Link>
       </div>
     </div>
   );
