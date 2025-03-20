@@ -10,7 +10,7 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
   const isAdminRoute = useMemo(() => pathname?.startsWith("/admin") ?? false, [pathname]);
 
   useEffect(() => {
-    // @ts-ignore
+    // @ts-expect-error: Bootstrap no tiene declaración de tipos en TypeScript
     import("bootstrap/dist/js/bootstrap.bundle.min.js")
       .then(() => console.log("✅ Bootstrap JS cargado correctamente"))
       .catch(err => console.error("❌ Error al cargar Bootstrap JS:", err));
