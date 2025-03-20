@@ -5,10 +5,15 @@ import { db } from "@/firebase";
 import { collection, getDocs, updateDoc, doc } from "firebase/firestore";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import Link from "next/link"; 
 
 // ✅ Extendemos `jsPDF` para incluir autoTable correctamente
 interface jsPDFWithAutoTable extends jsPDF {
-  autoTable: (options: any) => void;
+  autoTable: (options: {
+    startY?: number;
+    head: (string[])[];
+    body: (string | number)[][];
+  }) => void;
 }
 
 interface Formulario {
@@ -148,9 +153,9 @@ export default function Solicitudes() {
               </td>
               {/* ✅ Columna de Visualización */}
               <td>
-                <button className="btn btn-primary btn-sm me-2" onClick={() => window.open(`/admin/solicitudes/${f.id}`, "_blank")}>
-                  Ver Detalles
-                </button>
+              <Link href={`/admin/solicitudes/${f.id}`} className="btn btn-primary btn-sm me-2">
+  Ver Detalles
+</Link>
                 <button className="btn btn-secondary btn-sm" onClick={() => handleDownloadPDF(f)}>
                   Descargar PDF
                 </button>
