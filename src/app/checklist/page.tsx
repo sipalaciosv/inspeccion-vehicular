@@ -119,6 +119,16 @@ export default function ChecklistForm() {
           uploadedImages[`${item}_img`] = response.data.secure_url;
         }
       }
+      const itemsCriticos = [
+        "Revisión técnica",
+        "Permiso de Circulación",
+        "SOAP (seguro obligatorio)",
+        "Cartolas de recorrido",
+        "Licencia de conducir",
+        "Dirección"
+      ];
+      const hayCriticoMalo = itemsCriticos.some(item => form.checklist[item] === "M");
+
       const idCorrelativo = await obtenerIdCorrelativo("checklist");
       console.log("✅ ID Correlativo:", idCorrelativo);
       // 🔹 Guardar formulario en Firestore con URLs de imágenes
@@ -127,10 +137,13 @@ export default function ChecklistForm() {
         id_correlativo: idCorrelativo,
         checklist: { ...form.checklist, ...uploadedImages },
         fecha_creacion: new Date(),
-        estado: "pendiente",
+        estado: hayCriticoMalo ? "rechazado" : "pendiente",
         aprobado_por: null,
       });
-
+      alert(hayCriticoMalo
+        ? "❌ Formulario enviado pero fue rechazado automáticamente por ítems críticos."
+        : "✅ Formulario enviado exitosamente");
+      
       alert("✅ Formulario enviado exitosamente");
       setForm({
         fecha_inspeccion: "",
