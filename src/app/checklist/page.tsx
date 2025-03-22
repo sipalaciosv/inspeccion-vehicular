@@ -6,8 +6,25 @@ import { db } from "@/firebase";
 import VehicleInfo from "./components/VehicleInfo";
 import ChecklistSection from "./components/ChecklistSection";
 import axios from "axios";
+import { runTransaction, doc } from "firebase/firestore";
 
 
+const obtenerIdCorrelativo = async (tipo: "checklist" | "fatiga") => {
+  const contadorRef = doc(db, "contadores", tipo);
+  const nuevoId = await runTransaction(db, async transaction => {
+    const contadorDoc = await transaction.get(contadorRef);
+    if (!contadorDoc.exists()) throw "El documento de contador no existe.";
+
+    const ultimo = contadorDoc.data().ultimo_id || 0;
+    const siguiente = ultimo + 1;
+
+    transaction.update(contadorRef, { ultimo_id: siguiente });
+
+    return siguiente;
+  });
+
+  return nuevoId;
+};
 export interface FormData {
   fecha_inspeccion: string;
   hora_inspeccion: string;
@@ -102,10 +119,12 @@ export default function ChecklistForm() {
           uploadedImages[`${item}_img`] = response.data.secure_url;
         }
       }
-
+      const idCorrelativo = await obtenerIdCorrelativo("checklist");
+      console.log("✅ ID Correlativo:", idCorrelativo);
       // 🔹 Guardar formulario en Firestore con URLs de imágenes
       await addDoc(collection(db, "formularios"), {
         ...form,
+        id_correlativo: idCorrelativo,
         checklist: { ...form.checklist, ...uploadedImages },
         fecha_creacion: new Date(),
         estado: "pendiente",

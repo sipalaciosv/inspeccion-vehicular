@@ -117,11 +117,11 @@ export default function Solicitudes() {
       <table className="table table-striped">
         <thead>
           <tr>
-            <th>Nombre</th>
+            <th>Conductor</th>
             <th>N° Vehículo</th>
             <th>Fecha</th>
             <th>Hora</th>
-            <th>Hallazgos</th>
+            <th> No Conformidades</th>
             <th>Estado</th>
             <th>Acciones</th>
             <th>Visualizar</th>
