@@ -27,7 +27,7 @@ const secciones: { [key: string]: string[] } = {
   "Accesorios de Seguridad": [
     "Conos de seguridad (3)", "Extintor (pasillo y cabina)", "Gata hidráulica", 
     "Chaleco reflectante", "Cuñas de seguridad (2)", "Botiquín", "Llave de rueda", 
-    "Barrote de llave rueda", "Tubo de fuerza (1 metro)", "Multiplicador de fuerza"
+    "Barrote de llave rueda", "Tubo de fuerza (1 metro)", "Multiplicador de fuerza", "Triangulos de seguridad (2)"
   ],
   "Documentación": [
     "Revisión técnica", "Certificado de gases", "Permiso de Circulación", 

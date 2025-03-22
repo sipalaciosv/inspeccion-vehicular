@@ -88,67 +88,70 @@ export default function DetalleSolicitud() {
         </div>
       </div>
 
-      {/* Checklist */}
-      <div className="card mt-3">
-        <div className="card-header bg-warning text-dark">Checklist de la Inspección</div>
-        <div className="card-body">
-          <table className="table table-bordered">
-            <thead>
-              <tr>
-                <th>Ítem</th>
-                <th>Estado</th>
-                <th>Imagen</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Object.entries(formulario.checklist).map(([item, estado]) => (
-                <tr key={item}>
-                  <td>{item}</td>
-                  <td>
-                    <span className={`badge bg-${estado === "B" ? "success" : estado === "M" ? "danger" : "secondary"}`}>
-                      {estado}
-                    </span>
-                  </td>
-                  <td>
-  {estado.startsWith("https://") ? (
-    <>
-      <Image
-  src={estado}
-  alt="Imagen del problema"
-  width={100}
-  height={100}
-  className="img-thumbnail"
-  data-bs-toggle="modal"
-  data-bs-target={`#modal-${item.replace(/\s+/g, "-")}`}
-  style={{ cursor: "pointer" }}
-/>
-      {/* Modal de Bootstrap */}
-      <div className="modal fade" id={`modal-${item.replace(/\s+/g, "-")}`} tabIndex={-1} aria-hidden="true">
-        <div className="modal-dialog modal-lg">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h5 className="modal-title">{item}</h5>
-              <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-            </div>
-            <div className="modal-body text-center">
-            <Image src={estado} alt="Imagen del problema" width={800} height={600} className="img-fluid" />
+     {/* Checklist */}
+<div className="card mt-3">
+  <div className="card-header bg-warning text-dark">Checklist de la Inspección</div>
+  <div className="card-body">
+    <table className="table table-bordered">
+      <thead>
+        <tr>
+          <th>Ítem</th>
+          <th>Estado</th>
+          <th>Imagen</th>
+        </tr>
+      </thead>
+      <tbody>
+        {Object.entries(formulario.checklist).map(([item, estado]) => {
+          if (item.endsWith("_img")) return null; // ⛔ Ignorar claves que terminan en "_img"
+          const imageUrl = formulario.checklist[`${item}_img`]; // Buscar imagen asociada
 
-            </div>
-          </div>
-        </div>
-      </div>
-    </>
-  ) : (
-    "Sin imagen"
-  )}
-</td>
-
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+          return (
+            <tr key={item}>
+              <td>{item}</td>
+              <td>
+                <span className={`badge bg-${estado === "B" ? "success" : estado === "M" ? "danger" : "secondary"}`}>
+                  {estado}
+                </span>
+              </td>
+              <td>
+                {imageUrl ? (
+                  <>
+                    <Image
+                      src={imageUrl}
+                      alt="Imagen del problema"
+                      width={100}
+                      height={100}
+                      className="img-thumbnail"
+                      data-bs-toggle="modal"
+                      data-bs-target={`#modal-${item.replace(/\s+/g, "-")}`}
+                      style={{ cursor: "pointer" }}
+                    />
+                    {/* Modal de Bootstrap */}
+                    <div className="modal fade" id={`modal-${item.replace(/\s+/g, "-")}`} tabIndex={-1} aria-hidden="true">
+                      <div className="modal-dialog modal-lg">
+                        <div className="modal-content">
+                          <div className="modal-header">
+                            <h5 className="modal-title">{item}</h5>
+                            <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                          </div>
+                          <div className="modal-body text-center">
+                            <Image src={imageUrl} alt="Imagen grande" width={800} height={600} className="img-fluid" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  "Sin imagen"
+                )}
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  </div>
+</div>
 
       {/* Botón para regresar */}
       <div className="text-center mt-4">

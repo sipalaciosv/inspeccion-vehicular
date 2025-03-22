@@ -7,6 +7,7 @@ import VehicleInfo from "./components/VehicleInfo";
 import ChecklistSection from "./components/ChecklistSection";
 import axios from "axios";
 
+
 export interface FormData {
   fecha_inspeccion: string;
   hora_inspeccion: string;
@@ -26,6 +27,7 @@ export interface FormData {
 }
 
 export default function ChecklistForm() {
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState<FormData>({
     fecha_inspeccion: "",
     hora_inspeccion: "",
@@ -79,9 +81,12 @@ export default function ChecklistForm() {
   /** ✅ Función para manejar el envío del formulario a Firebase */
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log("✅ Enviando formulario con imágenes...");
+   
+    if (isSubmitting) return; // ⛔ Evitar envío doble
+  setIsSubmitting(true);    // 🔒 Bloquea el botón
 
     try {
+      console.log("✅ Enviando formulario con imágenes...");
       // 🔹 Subir imágenes a Cloudinary antes de enviar el formulario
       const uploadedImages: { [key: string]: string } = {};
       for (const item in imagenes) {
@@ -121,6 +126,8 @@ export default function ChecklistForm() {
     } catch (error) {
       console.error("❌ Error al enviar el formulario:", error);
       alert("❌ Error al enviar el formulario");
+    } finally{
+      setIsSubmitting(false); // ✅ Liberamos el botón
     }
   };
 
@@ -189,7 +196,9 @@ export default function ChecklistForm() {
 
         {/* Botón de Enviar */}
         <div className="text-center mt-3">
-          <button type="submit" className="btn btn-success">Enviar</button>
+        <button type="submit" className="btn btn-success" disabled={isSubmitting}>
+  {isSubmitting ? "Enviando..." : "Enviar"}
+</button>
         </div>
       </form>
     </main>
