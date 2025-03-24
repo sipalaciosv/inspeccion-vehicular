@@ -10,6 +10,8 @@ export default function AdminRegister() {
   const [secretKey, setSecretKey] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [nombre, setNombre] = useState("");
+
   const [error, setError] = useState(""); // ✅ Se usa correctamente
   const router = useRouter();
 
@@ -31,6 +33,7 @@ export default function AdminRegister() {
       await setDoc(doc(db, "usuarios", user.uid), {
         email: user.email,
         role: "admin",
+        nombre: nombre,
       });
 
       alert("✅ Administrador registrado con éxito");
@@ -55,6 +58,17 @@ export default function AdminRegister() {
             onChange={(e) => setSecretKey(e.target.value)}
           />
         </div>
+        <div className="mb-3">
+  <label>Nombre</label>
+  <input
+    type="text"
+    className="form-control"
+    required
+    value={nombre}
+    onChange={(e) => setNombre(e.target.value)}
+  />
+</div>
+
         <div className="mb-3">
           <label>Email</label>
           <input

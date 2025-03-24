@@ -30,14 +30,14 @@ export interface FormData {
   hora_inspeccion: string;
   conductor: string;
   numero_interno: string;
+  kilometraje: string;
   vehiculo: {
     marca: string;
     modelo: string;
     patente: string;
     ano: string;
     color: string;
-    kms_inicial: string;
-    kms_final: string;
+    
   };
   checklist: { [key: string]: string };
   observaciones: string;
@@ -50,7 +50,8 @@ export default function ChecklistForm() {
     hora_inspeccion: "",
     conductor: "",
     numero_interno: "",
-    vehiculo: { marca: "", modelo: "", patente: "", ano: "", color: "", kms_inicial: "", kms_final: "" },
+     kilometraje: "",
+    vehiculo: { marca: "", modelo: "", patente: "", ano: "", color: "" },
     checklist: {},
     observaciones: "",
   });
@@ -88,9 +89,10 @@ export default function ChecklistForm() {
           patente: vehiculo.patente || "",
           ano: vehiculo.ano || "",
           color: vehiculo.color || "",
-          kms_inicial: "",
-          kms_final: ""
-        }
+          
+          
+        },
+        kilometraje: "",
       }));
     }
   };
@@ -138,19 +140,20 @@ export default function ChecklistForm() {
         checklist: { ...form.checklist, ...uploadedImages },
         fecha_creacion: new Date(),
         estado: hayCriticoMalo ? "rechazado" : "pendiente",
-        aprobado_por: null,
+        aprobado_por: hayCriticoMalo ? "Autorechazo" : null,
       });
       alert(hayCriticoMalo
         ? "❌ Formulario enviado pero fue rechazado automáticamente por ítems críticos."
         : "✅ Formulario enviado exitosamente");
       
-      alert("✅ Formulario enviado exitosamente");
+      
       setForm({
         fecha_inspeccion: "",
         hora_inspeccion: "",
         conductor: "",
         numero_interno: "",
-        vehiculo: { marca: "", modelo: "", patente: "", ano: "", color: "", kms_inicial: "", kms_final: "" },
+        kilometraje: "",
+        vehiculo: { marca: "", modelo: "", patente: "", ano: "", color: "" },
         checklist: {},
         observaciones: "",
       });
@@ -173,14 +176,14 @@ export default function ChecklistForm() {
             <div className="col-md-3 mb-3">
               <label>Fecha de Inspección</label>
               <input
-                required type="date" className="form-control"
+                required type="date" className="form-control" value={form.fecha_inspeccion} 
                 onChange={(e) => setForm({ ...form, fecha_inspeccion: e.target.value })}
               />
             </div>
             <div className="col-md-3 mb-3">
               <label>Hora de Inspección</label>
               <input
-                required type="time" className="form-control"
+                required type="time" className="form-control" value={form.fecha_inspeccion} 
                 onChange={(e) => setForm({ ...form, hora_inspeccion: e.target.value })}
               />
             </div>
@@ -188,6 +191,7 @@ export default function ChecklistForm() {
               <label>Conductor</label>
               <select
                 required className="form-control"
+                value={form.conductor}
                 onChange={(e) => setForm({ ...form, conductor: e.target.value })}
               >
                 <option value="">Seleccione un conductor</option>
@@ -200,6 +204,7 @@ export default function ChecklistForm() {
               <label>Número Interno</label>
               <select
                 required className="form-control"
+                value={form.numero_interno}
                 onChange={(e) => cargarDatosVehiculo(e.target.value)}
               >
                 <option value="">Seleccione un número interno</option>
@@ -208,6 +213,22 @@ export default function ChecklistForm() {
                 ))}
               </select>
             </div>
+            <div className="col-md-3 mb-3">
+            
+  <label>Kilometraje</label>
+  <input
+    required
+    type="number"
+    value={form.fecha_inspeccion} 
+    className="form-control"
+    onChange={(e) =>
+      setForm({
+        ...form,
+         kilometraje: e.target.value 
+      })}
+    
+  />
+</div>
           </div>
           <VehicleInfo vehiculo={form.vehiculo} />
         </div>
