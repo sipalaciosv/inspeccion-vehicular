@@ -5,8 +5,13 @@ import { db } from "@/firebase";
 import { collection, getDocs, addDoc, updateDoc, doc } from "firebase/firestore";
 
 export default function GestionConductores() {
+  interface Conductor {
+    id: string;
+    nombre: string;
+  }
+  
   const [nombre, setNombre] = useState("");
-  const [conductores, setConductores] = useState<any[]>([]);
+  const [conductores, setConductores] = useState<Conductor[]>([]);
   const [conductorEdit, setConductorEdit] = useState<{ id: string; nombre: string } | null>(null);
   const [toast, setToast] = useState("");
 
@@ -16,7 +21,10 @@ export default function GestionConductores() {
 
   const cargarConductores = async () => {
     const snapshot = await getDocs(collection(db, "conductores"));
-    setConductores(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    snapshot.docs.map(doc => ({
+      id: doc.id,
+      nombre: doc.data().nombre || ""
+    }));
   };
 
   const agregarConductor = async () => {

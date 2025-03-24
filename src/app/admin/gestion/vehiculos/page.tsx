@@ -5,8 +5,25 @@ import { db } from "@/firebase";
 import { collection, getDocs, addDoc, updateDoc, doc } from "firebase/firestore";
 
 export default function GestionVehiculos() {
-  const [vehiculo, setVehiculo] = useState({ numero_interno: "", marca: "", modelo: "", patente: "", color: "", ano: "" });
-  const [vehiculos, setVehiculos] = useState<any[]>([]);
+  interface Vehiculo {
+    id: string;
+    numero_interno: string;
+    marca: string;
+    modelo: string;
+    patente: string;
+    color: string;
+    ano: string;
+  }
+  
+  const [vehiculo, setVehiculo] = useState<Omit<Vehiculo, "id">>({
+    numero_interno: "",
+    marca: "",
+    modelo: "",
+    patente: "",
+    color: "",
+    ano: ""
+  });
+  const [vehiculos, setVehiculos] = useState<Vehiculo[]>([]);
   const [vehiculoEditando, setVehiculoEditando] = useState<any | null>(null);
   const [mostrarToast, setMostrarToast] = useState(false);
 
@@ -16,7 +33,15 @@ export default function GestionVehiculos() {
 
   const cargarVehiculos = async () => {
     const snapshot = await getDocs(collection(db, "vehiculos"));
-    setVehiculos(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    setVehiculos(snapshot.docs.map(doc => ({
+      id: doc.id,
+      numero_interno: doc.data().numero_interno || "",
+      marca: doc.data().marca || "",
+      modelo: doc.data().modelo || "",
+      patente: doc.data().patente || "",
+      color: doc.data().color || "",
+      ano: doc.data().ano || ""
+    })));
   };
 
   const agregarVehiculo = async () => {
@@ -25,7 +50,7 @@ export default function GestionVehiculos() {
     await cargarVehiculos();
   };
 
-  const actualizarVehiculo = async () => {
+  const actualizarVehiculo = async (id: string, datos: Partial<Omit<Vehiculo, "id">>) => {
     if (!vehiculoEditando) return;
     await updateDoc(doc(db, "vehiculos", vehiculoEditando.id), {
       numero_interno: vehiculoEditando.numero_interno,
@@ -113,7 +138,12 @@ export default function GestionVehiculos() {
               </div>
               <div className="modal-footer">
                 <button className="btn btn-secondary" onClick={() => setVehiculoEditando(null)}>Cancelar</button>
-                <button className="btn btn-primary" onClick={actualizarVehiculo}>Guardar Cambios</button>
+                <button
+  className="btn btn-primary"
+  onClick={() => actualizarVehiculo(vehiculoEditando.id, vehiculoEditando)}
+>
+  Guardar Cambios
+</button>
               </div>
             </div>
           </div>
