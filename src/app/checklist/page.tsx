@@ -6,32 +6,52 @@ import { db } from "@/firebase";
 import VehicleInfo from "./components/VehicleInfo";
 import ChecklistSection from "./components/ChecklistSection";
 import axios from "axios";
+import { runTransaction, doc } from "firebase/firestore";
 
+
+const obtenerIdCorrelativo = async (tipo: "checklist" | "fatiga") => {
+  const contadorRef = doc(db, "contadores", tipo);
+  const nuevoId = await runTransaction(db, async transaction => {
+    const contadorDoc = await transaction.get(contadorRef);
+    if (!contadorDoc.exists()) throw "El documento de contador no existe.";
+
+    const ultimo = contadorDoc.data().ultimo_id || 0;
+    const siguiente = ultimo + 1;
+
+    transaction.update(contadorRef, { ultimo_id: siguiente });
+
+    return siguiente;
+  });
+
+  return nuevoId;
+};
 export interface FormData {
   fecha_inspeccion: string;
   hora_inspeccion: string;
   conductor: string;
   numero_interno: string;
+  kilometraje: string;
   vehiculo: {
     marca: string;
     modelo: string;
     patente: string;
     ano: string;
     color: string;
-    kms_inicial: string;
-    kms_final: string;
+    
   };
   checklist: { [key: string]: string };
   observaciones: string;
 }
 
 export default function ChecklistForm() {
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState<FormData>({
     fecha_inspeccion: "",
     hora_inspeccion: "",
     conductor: "",
     numero_interno: "",
-    vehiculo: { marca: "", modelo: "", patente: "", ano: "", color: "", kms_inicial: "", kms_final: "" },
+     kilometraje: "",
+    vehiculo: { marca: "", modelo: "", patente: "", ano: "", color: "" },
     checklist: {},
     observaciones: "",
   });
@@ -69,9 +89,10 @@ export default function ChecklistForm() {
           patente: vehiculo.patente || "",
           ano: vehiculo.ano || "",
           color: vehiculo.color || "",
-          kms_inicial: "",
-          kms_final: ""
-        }
+          
+          
+        },
+        kilometraje: "",
       }));
     }
   };
@@ -79,9 +100,12 @@ export default function ChecklistForm() {
   /** ✅ Función para manejar el envío del formulario a Firebase */
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log("✅ Enviando formulario con imágenes...");
+   
+    if (isSubmitting) return; // ⛔ Evitar envío doble
+  setIsSubmitting(true);    // 🔒 Bloquea el botón
 
     try {
+      console.log("✅ Enviando formulario con imágenes...");
       // 🔹 Subir imágenes a Cloudinary antes de enviar el formulario
       const uploadedImages: { [key: string]: string } = {};
       for (const item in imagenes) {
@@ -97,23 +121,39 @@ export default function ChecklistForm() {
           uploadedImages[`${item}_img`] = response.data.secure_url;
         }
       }
+      const itemsCriticos = [
+        "Revisión técnica",
+        "Permiso de Circulación",
+        "SOAP (seguro obligatorio)",
+        "Cartolas de recorrido",
+        "Licencia de conducir",
+        "Dirección"
+      ];
+      const hayCriticoMalo = itemsCriticos.some(item => form.checklist[item] === "M");
 
+      const idCorrelativo = await obtenerIdCorrelativo("checklist");
+      console.log("✅ ID Correlativo:", idCorrelativo);
       // 🔹 Guardar formulario en Firestore con URLs de imágenes
       await addDoc(collection(db, "formularios"), {
         ...form,
+        id_correlativo: idCorrelativo,
         checklist: { ...form.checklist, ...uploadedImages },
         fecha_creacion: new Date(),
-        estado: "pendiente",
-        aprobado_por: null,
+        estado: hayCriticoMalo ? "rechazado" : "pendiente",
+        aprobado_por: hayCriticoMalo ? "Autorechazo" : null,
       });
-
-      alert("✅ Formulario enviado exitosamente");
+      alert(hayCriticoMalo
+        ? "❌ Formulario enviado pero fue rechazado automáticamente por ítems críticos."
+        : "✅ Formulario enviado exitosamente");
+      
+      
       setForm({
         fecha_inspeccion: "",
         hora_inspeccion: "",
         conductor: "",
         numero_interno: "",
-        vehiculo: { marca: "", modelo: "", patente: "", ano: "", color: "", kms_inicial: "", kms_final: "" },
+        kilometraje: "",
+        vehiculo: { marca: "", modelo: "", patente: "", ano: "", color: "" },
         checklist: {},
         observaciones: "",
       });
@@ -121,6 +161,8 @@ export default function ChecklistForm() {
     } catch (error) {
       console.error("❌ Error al enviar el formulario:", error);
       alert("❌ Error al enviar el formulario");
+    } finally{
+      setIsSubmitting(false); // ✅ Liberamos el botón
     }
   };
 
@@ -134,14 +176,14 @@ export default function ChecklistForm() {
             <div className="col-md-3 mb-3">
               <label>Fecha de Inspección</label>
               <input
-                required type="date" className="form-control"
+                required type="date" className="form-control" value={form.fecha_inspeccion} 
                 onChange={(e) => setForm({ ...form, fecha_inspeccion: e.target.value })}
               />
             </div>
             <div className="col-md-3 mb-3">
               <label>Hora de Inspección</label>
               <input
-                required type="time" className="form-control"
+                required type="time" className="form-control" value={form.fecha_inspeccion} 
                 onChange={(e) => setForm({ ...form, hora_inspeccion: e.target.value })}
               />
             </div>
@@ -149,6 +191,7 @@ export default function ChecklistForm() {
               <label>Conductor</label>
               <select
                 required className="form-control"
+                value={form.conductor}
                 onChange={(e) => setForm({ ...form, conductor: e.target.value })}
               >
                 <option value="">Seleccione un conductor</option>
@@ -161,6 +204,7 @@ export default function ChecklistForm() {
               <label>Número Interno</label>
               <select
                 required className="form-control"
+                value={form.numero_interno}
                 onChange={(e) => cargarDatosVehiculo(e.target.value)}
               >
                 <option value="">Seleccione un número interno</option>
@@ -169,6 +213,22 @@ export default function ChecklistForm() {
                 ))}
               </select>
             </div>
+            <div className="col-md-3 mb-3">
+            
+  <label>Kilometraje</label>
+  <input
+    required
+    type="number"
+    value={form.fecha_inspeccion} 
+    className="form-control"
+    onChange={(e) =>
+      setForm({
+        ...form,
+         kilometraje: e.target.value 
+      })}
+    
+  />
+</div>
           </div>
           <VehicleInfo vehiculo={form.vehiculo} />
         </div>
@@ -189,7 +249,9 @@ export default function ChecklistForm() {
 
         {/* Botón de Enviar */}
         <div className="text-center mt-3">
-          <button type="submit" className="btn btn-success">Enviar</button>
+        <button type="submit" className="btn btn-success" disabled={isSubmitting}>
+  {isSubmitting ? "Enviando..." : "Enviar"}
+</button>
         </div>
       </form>
     </main>

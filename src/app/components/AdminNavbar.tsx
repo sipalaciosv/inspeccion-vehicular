@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { auth } from "@/firebase";
-import { onAuthStateChanged, signOut} from "firebase/auth";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 
 export default function AdminNavbar() {
@@ -13,7 +13,7 @@ export default function AdminNavbar() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (!currentUser) {
-        router.push("/login"); // Redirigir si no está autenticado
+        router.push("/login");
       }
     });
     return () => unsubscribe();
@@ -33,15 +33,49 @@ export default function AdminNavbar() {
         </button>
         <div className={`collapse navbar-collapse ${isOpen ? "show" : ""}`}>
           <ul className="navbar-nav ms-auto">
-            <li className="nav-item">
-              <Link className="nav-link" href="/admin/solicitudes">Solicitudes</Link>
+
+            {/* Checklist Dropdown */}
+            <li className="nav-item dropdown">
+              <a className="nav-link dropdown-toggle" href="#" id="checklistDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                Checklist
+              </a>
+              <ul className="dropdown-menu" aria-labelledby="checklistDropdown">
+                <li><Link className="dropdown-item" href="/admin/solicitudes/pendientes">Pendientes</Link></li>
+                <li><Link className="dropdown-item" href="/admin/solicitudes/atendidos">Atendidos</Link></li>
+              </ul>
             </li>
-            <li className="nav-item">
-              <Link className="nav-link" href="/admin/gestion">Gestión</Link>
+
+            {/* Gestión Dropdown */}
+            <li className="nav-item dropdown">
+              <a className="nav-link dropdown-toggle" href="#" id="gestionDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                Gestión
+              </a>
+              <ul className="dropdown-menu" aria-labelledby="gestionDropdown">
+                <li><Link className="dropdown-item" href="/admin/gestion/vehiculos">Vehículos</Link></li>
+                <li><Link className="dropdown-item" href="/admin/gestion/conductores">Conductores</Link></li>
+              </ul>
             </li>
-            <li className="nav-item">
-              <button className="btn btn-danger" onClick={handleLogout}>Cerrar Sesión</button>
+
+            {/* Usuarios Dropdown */}
+            <li className="nav-item dropdown">
+              <a className="nav-link dropdown-toggle" href="#" id="usuariosDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                Usuarios
+              </a>
+              <ul className="dropdown-menu" aria-labelledby="usuariosDropdown">
+                <li><Link className="dropdown-item" href="/admin/usuarios/admins">Administradores</Link></li>
+              </ul>
             </li>
+
+            {/* 🌐 Panel Público */}
+            <li className="nav-item">
+              <Link className="nav-link" href="/checklist">🌐 Panel Público</Link>
+            </li>
+
+            {/* Cerrar Sesión */}
+            <li className="nav-item">
+              <button className="btn btn-danger ms-3" onClick={handleLogout}>Cerrar Sesión</button>
+            </li>
+
           </ul>
         </div>
       </div>
