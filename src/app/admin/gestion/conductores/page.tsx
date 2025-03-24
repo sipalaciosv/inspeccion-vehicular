@@ -11,7 +11,7 @@ export default function GestionConductores() {
   }
   
   const [nombre, setNombre] = useState("");
-  const [conductores, setConductores] = useState<Conductor[]>([]);
+  const [conductores] = useState<Conductor[]>([]);
   const [conductorEdit, setConductorEdit] = useState<{ id: string; nombre: string } | null>(null);
   const [toast, setToast] = useState("");
 

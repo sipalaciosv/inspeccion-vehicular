@@ -46,7 +46,7 @@ export default function ChecklistAtendidos() {
     const fetchFormularios = async () => {
       const snapshot = await getDocs(collection(db, "formularios"));
       const data = snapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() } as any))
+        .map(doc => ({ id: doc.id, ...doc.data() } as Formulario))
         .filter(f => f.estado !== "pendiente")
         .sort((a, b) => b.id_correlativo - a.id_correlativo); // 🆕 Ordenar
       setFormularios(data);

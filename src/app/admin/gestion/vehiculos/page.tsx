@@ -24,7 +24,8 @@ export default function GestionVehiculos() {
     ano: ""
   });
   const [vehiculos, setVehiculos] = useState<Vehiculo[]>([]);
-  const [vehiculoEditando, setVehiculoEditando] = useState<any | null>(null);
+  const [vehiculoEditando, setVehiculoEditando] = useState<Vehiculo | null>(null);
+
   const [mostrarToast, setMostrarToast] = useState(false);
 
   useEffect(() => {
@@ -50,7 +51,7 @@ export default function GestionVehiculos() {
     await cargarVehiculos();
   };
 
-  const actualizarVehiculo = async (id: string, datos: Partial<Omit<Vehiculo, "id">>) => {
+  const actualizarVehiculo = async () => {
     if (!vehiculoEditando) return;
     await updateDoc(doc(db, "vehiculos", vehiculoEditando.id), {
       numero_interno: vehiculoEditando.numero_interno,
@@ -140,7 +141,7 @@ export default function GestionVehiculos() {
                 <button className="btn btn-secondary" onClick={() => setVehiculoEditando(null)}>Cancelar</button>
                 <button
   className="btn btn-primary"
-  onClick={() => actualizarVehiculo(vehiculoEditando.id, vehiculoEditando)}
+  onClick={() => actualizarVehiculo()}
 >
   Guardar Cambios
 </button>
