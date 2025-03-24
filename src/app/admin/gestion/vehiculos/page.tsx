@@ -78,7 +78,7 @@ export default function GestionVehiculos() {
           <input key={campo}
             className="form-control mb-2"
             placeholder={campo.replace("_", " ").toUpperCase()}
-            value={(vehiculo as any)[campo]}
+            value={vehiculo[campo as keyof typeof vehiculo]}
             onChange={(e) => setVehiculo({ ...vehiculo, [campo]: e.target.value })}
           />
         ))}
@@ -132,7 +132,8 @@ export default function GestionVehiculos() {
                   <input key={campo}
                     className="form-control mb-2"
                     placeholder={campo.replace("_", " ").toUpperCase()}
-                    value={(vehiculoEditando as any)[campo]}
+                    value={vehiculoEditando[campo as keyof typeof vehiculoEditando]}
+
                     onChange={(e) => setVehiculoEditando({ ...vehiculoEditando, [campo]: e.target.value })}
                   />
                 ))}
