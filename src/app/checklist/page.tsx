@@ -183,7 +183,7 @@ export default function ChecklistForm() {
             <div className="col-md-3 mb-3">
               <label>Hora de Inspección</label>
               <input
-                required type="time" className="form-control" value={form.fecha_inspeccion} 
+                required type="time" className="form-control" value={form.hora_inspeccion}
                 onChange={(e) => setForm({ ...form, hora_inspeccion: e.target.value })}
               />
             </div>
@@ -219,7 +219,7 @@ export default function ChecklistForm() {
   <input
     required
     type="number"
-    value={form.fecha_inspeccion} 
+    value={form.kilometraje} 
     className="form-control"
     onChange={(e) =>
       setForm({
