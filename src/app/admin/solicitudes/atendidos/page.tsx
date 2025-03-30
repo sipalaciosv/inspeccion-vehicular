@@ -228,7 +228,7 @@ export default function ChecklistAtendidos() {
 
     }
   
-    const imagenes = Object.entries(form.checklist).filter(([_, estado]) =>
+    const imagenes = Object.entries(form.checklist).filter(([, estado]) =>
       estado.startsWith("https://")
     );
     
