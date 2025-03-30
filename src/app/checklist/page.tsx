@@ -168,8 +168,14 @@ export default function ChecklistForm() {
 
   return (
     <main className="container py-4">
-      <h2>Checklist Pre Uso Buses 🚌</h2>
-      <form onSubmit={handleSubmit} method="POST">
+      
+      
+      <div className="card">
+        <div className="card-header">
+        <h2>Checklist Pre Uso Buses 🚌</h2>
+        </div>
+        <div className="card-body">
+        <form onSubmit={handleSubmit} method="POST">
         <div className="card mb-4">
           <div className="card-header bg-secondary text-white">Información del Vehículo y Conductor</div>
           <div className="card-body row">
@@ -254,6 +260,8 @@ export default function ChecklistForm() {
 </button>
         </div>
       </form>
+        </div>
+      </div>
     </main>
   );
 }
