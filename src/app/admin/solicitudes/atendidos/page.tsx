@@ -12,7 +12,7 @@ interface jsPDFWithAutoTable extends jsPDF {
     startY?: number;
     head: (string[])[]; 
     body: RowInput[];
-    [key: string]: any;
+    [key: string]: unknown;
   }) => void;
   lastAutoTable?: {
     finalY: number;
@@ -234,7 +234,7 @@ export default function ChecklistAtendidos() {
       doc.setFontSize(12);
       doc.text("Imágenes Adjuntas", 14, y);
       y += 8;
-  
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       for (const [item, url] of imagenes) {
         if (y + 50 > pageHeight - 20) {
           addFooter();
