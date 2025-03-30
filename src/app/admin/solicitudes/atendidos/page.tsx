@@ -5,18 +5,20 @@ import { db } from "@/firebase";
 import { collection, getDocs } from "firebase/firestore";
 import Link from "next/link";
 import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import autoTable, { RowInput } from "jspdf-autotable";
+
 interface jsPDFWithAutoTable extends jsPDF {
   autoTable: (options: {
     startY?: number;
     head: (string[])[]; 
-    body: (string | number)[][];
+    body: RowInput[];
     [key: string]: any;
   }) => void;
   lastAutoTable?: {
     finalY: number;
   };
 }
+
 
 const secciones: { [key: string]: string[] } = {
   "Sistema de Luces": [
