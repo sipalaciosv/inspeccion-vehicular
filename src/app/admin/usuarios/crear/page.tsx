@@ -10,7 +10,7 @@ export default function CrearUsuario() {
   const [nombre, setNombre] = useState("");
   const [apellido, setApellido] = useState("");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("123456"); // Contraseña por defecto
+  
   const [rol, setRol] = useState("chofer");
   const [error, setError] = useState("");
   const router = useRouter();
@@ -25,7 +25,7 @@ export default function CrearUsuario() {
     setError("");
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, "123456");
       const user = userCredential.user;
 
       await setDoc(doc(db, "usuarios", user.uid), {
