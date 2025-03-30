@@ -12,7 +12,7 @@ interface jsPDFWithAutoTable extends jsPDF {
     startY?: number;
     head: (string[])[]; 
     body: RowInput[];
-    [key: string]: any;
+    [key: string]: unknown;
   }) => void;
   lastAutoTable?: {
     finalY: number;
