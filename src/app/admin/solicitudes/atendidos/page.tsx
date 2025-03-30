@@ -13,7 +13,36 @@ interface jsPDFWithAutoTable extends jsPDF {
     body: (string | number)[][];
   }) => void;
 }
-
+const secciones: { [key: string]: string[] } = {
+  "Sistema de Luces": [
+    "Luz delantera alta", "Luz delantera baja", "Luces de emergencia",
+    "Luces neblineros", "Luces direccionales delanteras", "Luces direccionales traseras", "Luces de salón"
+  ],
+  "Estado de Llantas y Neumáticos": [
+    "Llanta y neumático pos. 1", "Llanta y neumático pos. 2", "Llanta y neumático pos. 3",
+    "Llanta y neumático pos. 4", "Llanta y neumático pos. 5", "Llanta y neumático pos. 6",
+    "Llanta y neumático pos. 7", "Llanta y neumático pos. 8", "Llanta de repuesto"
+  ],
+  "Parte Exterior": [
+    "Parabrisas delantero", "Parabrisas trasero", "Limpia parabrisas",
+    "Vidrio de ventanas", "Espejos laterales", "Tapa de estanque combustible"
+  ],
+  "Parte Interna": [
+    "Estado de tablero/indicadores operativos", "Maxi brake", "Freno de servicio",
+    "Cinturón de seguridad conductor", "Cinturón de pasajeros", "Orden, limpieza y baño",
+    "Dirección", "Bocina", "Asientos", "Luces del salón de pasajeros"
+  ],
+  "Accesorios de Seguridad": [
+    "Conos de seguridad (3)", "Extintor (pasillo y cabina)", "Gata hidráulica",
+    "Chaleco reflectante", "Cuñas de seguridad (2)", "Botiquín", "Llave de rueda",
+    "Barrote de llave rueda", "Tubo de fuerza (1 metro)", "Multiplicador de fuerza", "Triangulos de seguridad (2)"
+  ],
+  "Documentación": [
+    "Revisión técnica", "Certificado de gases", "Permiso de Circulación",
+    "SOAP (seguro obligatorio)", "Padrón (inscripción)", "Cartolas de recorrido",
+    "Licencia de conducir", "Tarjeta SiB"
+  ],
+};
 interface Formulario {
   id: string;
   id_correlativo: number;
@@ -58,50 +87,175 @@ export default function ChecklistAtendidos() {
   const contarHallazgos = (checklist: { [key: string]: string }) =>
     Object.values(checklist).filter(value => value === "M").length;
   
-  const handleDownloadPDF = (form: Formulario) => {
-    const doc = new jsPDF() as jsPDFWithAutoTable;
+  const handleDownloadPDF = async (form: Formulario) => {
+    const doc = new jsPDF("p", "mm", "a4") as jsPDFWithAutoTable;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    let y = 20;
+  
+    const logo = await fetch("/tarapaca.png")
+      .then(res => res.blob())
+      .then(blob => new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(blob);
+      }));
+  
+    doc.addImage(logo, "PNG", 14, 10, 30, 20);
+  
+    const estadoIcon = form.estado === "aprobado" ? "/aprobado.png" : "/rechazado.png";
+    const iconBase64 = await fetch(estadoIcon)
+      .then(res => res.blob())
+      .then(blob => new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(blob);
+      }));
+  
+    doc.addImage(iconBase64, "PNG", pageWidth - 30, 10, 12, 12);
   
     doc.setFontSize(16);
-    doc.text("Reporte de Inspección", 14, 20);
-    doc.setFontSize(12);
-    doc.text(`Conductor: ${form.conductor}`, 14, 30);
-    doc.text(`Número Interno: ${form.numero_interno}`, 14, 40);
-    doc.text(`Fecha: ${form.fecha_inspeccion}`, 14, 50);
-    doc.text(`Hora: ${form.hora_inspeccion}`, 14, 60);
-    doc.text(`Kilometraje: ${form.kilometraje || "N/A"}`, 14, 70);
-    doc.text(`Estado: ${form.estado}`, 14, 80);
-    doc.text(`Revisado por: ${form.aprobado_por || "Desconocido"}`, 14, 90);
-    doc.text("Observaciones:", 14, 100);
-    doc.text(form.observaciones || "Ninguna", 14, 110);
+    doc.setFont("helvetica", "bold");
+    doc.text("Checklist Buses Tarapacá", pageWidth / 2, 20, { align: "center" });
   
-    doc.text("Información del Vehículo:", 14, 120);
-    doc.text(`Marca: ${form.vehiculo.marca}`, 14, 130);
-    doc.text(`Modelo: ${form.vehiculo.modelo}`, 14, 140);
-    doc.text(`Patente: ${form.vehiculo.patente}`, 14, 150);
-    doc.text(`Año: ${form.vehiculo.ano}`, 14, 160);
-    doc.text(`Color: ${form.vehiculo.color}`, 14, 170);
+    y = 35;
+    doc.setLineWidth(0.5);
+    doc.line(14, y, pageWidth - 14, y);
+    y += 10;
+  
+    const datosFormulario = [
+      ["Conductor", form.conductor],
+      ["N° Interno", form.numero_interno],
+      ["Fecha", form.fecha_inspeccion],
+      ["Hora", form.hora_inspeccion],
+      ["Kilometraje", form.kilometraje || "N/A"],
+      ["Estado", form.estado],
+      ["Aprobado por", form.aprobado_por || "Desconocido"],
+      ["Observaciones", form.observaciones || "Ninguna"]
+    ];
+    
+    const datosVehiculo = [
+      ["Marca", form.vehiculo.marca],
+      ["Modelo", form.vehiculo.modelo],
+      ["Patente", form.vehiculo.patente],
+      ["Año", form.vehiculo.ano || "N/A"],
+      ["Color", form.vehiculo.color || "N/A"]
+    ];
   
     autoTable(doc, {
-      startY: 180,
-      head: [["Ítem", "Estado"]],
-      body: Object.entries(form.checklist).map(([item, estado]) => [item, estado]),
+      startY: y,
+      head: [["Datos del Formulario", ""]],
+      body: datosFormulario,
+      styles: { fontSize: 10, cellPadding: 2 },
+      headStyles: {
+        fillColor: [240, 240, 240],
+        textColor: 0,
+        fontStyle: "bold",
+        halign: "center",
+      },
+      margin: { left: 14, right: 14 },
     });
+    
+    y = (doc as any).lastAutoTable.finalY + 10;
+    
+    // Tabla 2: Información del Vehículo
+    autoTable(doc, {
+      startY: y,
+      head: [["Información del Vehículo", ""]],
+      body: datosVehiculo,
+      styles: { fontSize: 10, cellPadding: 2 },
+      headStyles: {
+        fillColor: [240, 240, 240],
+        textColor: 0,
+        fontStyle: "bold",
+        halign: "center",
+      },
+      margin: { left: 14, right: 14 },
+    });
+    
+    y = (doc as any).lastAutoTable.finalY + 10;
   
-    let yPosition = doc.internal.pageSize.height - 60;
-    Object.entries(form.checklist).forEach(([item, estado]) => {
-      if (estado.startsWith("https://")) {
-        if (yPosition + 50 > doc.internal.pageSize.height) {
-          doc.addPage();
-          yPosition = 20;
-        }
-        doc.text(`Imagen: ${item}`, 14, yPosition);
-        doc.addImage(estado, "JPEG", 14, yPosition + 10, 60, 40);
-        yPosition += 50;
+    // ✅ Checklist agrupado por secciones
+    for (const [titulo, items] of Object.entries(secciones)) {
+      if (y + 30 > pageHeight - 20) {
+        addFooter();
+        doc.addPage();
+        y = 20;
       }
-    });
   
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.text(titulo, 14, y);
+      y += 6;
+  
+      autoTable(doc, {
+        startY: y,
+        head: [["Ítem", "Estado"]],
+        body: items.map(item => [item, form.checklist[item] || "N/A"]),
+        styles: { fontSize: 10, cellPadding: 2 },
+        headStyles: {
+          fillColor: [52, 58, 64],
+          textColor: 255,
+          fontStyle: 'bold',
+          halign: 'center',
+        },
+        bodyStyles: {
+          halign: 'left',
+        },
+        didParseCell: (data) => {
+          if (data.section === 'body' && data.column.index === 1) {
+            const value = data.cell.text[0];
+            if (value === "B") data.cell.styles.textColor = [0, 150, 0];
+            else if (value === "M") data.cell.styles.textColor = [200, 0, 0];
+            else data.cell.styles.textColor = [100, 100, 100];
+          }
+        },
+        margin: { left: 14, right: 14 },
+      });
+  
+      y = (doc as any).lastAutoTable.finalY + 10;
+    }
+  
+    const imagenes = Object.entries(form.checklist).filter(([_, estado]) => estado.startsWith("https://"));
+    if (imagenes.length > 0) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(12);
+      doc.text("Imágenes Adjuntas", 14, y);
+      y += 8;
+  
+      for (const [item, url] of imagenes) {
+        if (y + 50 > pageHeight - 20) {
+          addFooter();
+          doc.addPage();
+          y = 20;
+        }
+        doc.setFont("helvetica", "normal");
+        doc.text(`Ítem: ${item}`, 14, y);
+        try {
+          doc.addImage(url, "JPEG", 14, y + 5, 60, 40);
+        } catch {
+          doc.text("⚠️ Error al cargar imagen", 14, y + 10);
+        }
+        y += 50;
+      }
+    }
+  
+    addFooter();
     doc.save(`reporte_${form.conductor}_${form.fecha_inspeccion}.pdf`);
+  
+    function addFooter() {
+      const pageCount = doc.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(10);
+        doc.setTextColor(150);
+        doc.text(`Página ${i} de ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: "center" });
+        doc.text("Buses Tarapacá", 14, pageHeight - 10);
+      }
+    }
   };
+  
+  
   
 
   const limpiarFiltros = () => {
