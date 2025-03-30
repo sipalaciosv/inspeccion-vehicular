@@ -228,29 +228,36 @@ export default function ChecklistAtendidos() {
 
     }
   
-    const imagenes = Object.entries(form.checklist).filter(([item, estado]) => estado.startsWith("https://"));
+    const imagenes = Object.entries(form.checklist).filter(([, estado]) =>
+      estado.startsWith("https://")
+    );
+    
     if (imagenes.length > 0) {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(12);
       doc.text("Imágenes Adjuntas", 14, y);
       y += 8;
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    
       for (const [item, url] of imagenes) {
         if (y + 50 > pageHeight - 20) {
           addFooter();
           doc.addPage();
           y = 20;
         }
+    
         doc.setFont("helvetica", "normal");
-        doc.text(`Ítem: ${item}`, 14, y);
+        doc.text(`Ítem: ${item}`, 14, y); // ✅ item sí se usa aquí
+    
         try {
           doc.addImage(url, "JPEG", 14, y + 5, 60, 40);
         } catch {
           doc.text("⚠️ Error al cargar imagen", 14, y + 10);
         }
+    
         y += 50;
       }
     }
+    
   
     addFooter();
     doc.save(`reporte_${form.conductor}_${form.fecha_inspeccion}.pdf`);
