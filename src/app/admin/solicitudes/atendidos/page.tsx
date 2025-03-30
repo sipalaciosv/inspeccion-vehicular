@@ -11,8 +11,13 @@ interface jsPDFWithAutoTable extends jsPDF {
     startY?: number;
     head: (string[])[]; 
     body: (string | number)[][];
+    [key: string]: any;
   }) => void;
+  lastAutoTable?: {
+    finalY: number;
+  };
 }
+
 const secciones: { [key: string]: string[] } = {
   "Sistema de Luces": [
     "Luz delantera alta", "Luz delantera baja", "Luces de emergencia",
@@ -156,7 +161,10 @@ export default function ChecklistAtendidos() {
       margin: { left: 14, right: 14 },
     });
     
-    y = (doc as any).lastAutoTable.finalY + 10;
+    y = ((doc as jsPDFWithAutoTable).lastAutoTable?.finalY ?? y) + 10;
+
+
+
     
     // Tabla 2: Información del Vehículo
     autoTable(doc, {
@@ -173,7 +181,8 @@ export default function ChecklistAtendidos() {
       margin: { left: 14, right: 14 },
     });
     
-    y = (doc as any).lastAutoTable.finalY + 10;
+    y = ((doc as jsPDFWithAutoTable).lastAutoTable?.finalY ?? y) + 10;
+
   
     // ✅ Checklist agrupado por secciones
     for (const [titulo, items] of Object.entries(secciones)) {
@@ -213,10 +222,11 @@ export default function ChecklistAtendidos() {
         margin: { left: 14, right: 14 },
       });
   
-      y = (doc as any).lastAutoTable.finalY + 10;
+      y = ((doc as jsPDFWithAutoTable).lastAutoTable?.finalY ?? y) + 10;
+
     }
   
-    const imagenes = Object.entries(form.checklist).filter(([_, estado]) => estado.startsWith("https://"));
+    const imagenes = Object.entries(form.checklist).filter(([item, estado]) => estado.startsWith("https://"));
     if (imagenes.length > 0) {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(12);
