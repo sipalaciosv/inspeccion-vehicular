@@ -1,4 +1,5 @@
 "use client";
+import type { CanvasPath } from "react-sketch-canvas"; // agrégalo arriba
 import { useRef, useState } from "react";
 import { ReactSketchCanvas, ReactSketchCanvasRef } from "react-sketch-canvas";
 import { Modal, Button } from "react-bootstrap";
@@ -10,7 +11,7 @@ interface DamageDrawingProps {
 export default function DamageDrawing({ onSave }: DamageDrawingProps) {
   const canvasRef = useRef<ReactSketchCanvasRef>(null);
   const [show, setShow] = useState(false);
-  const [paths, setPaths] = useState<any[] | null>(null);
+  const [paths, setPaths] = useState<CanvasPath[] | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   useEffect(() => {
