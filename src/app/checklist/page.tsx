@@ -7,6 +7,7 @@ import VehicleInfo from "./components/VehicleInfo";
 import ChecklistSection from "./components/ChecklistSection";
 import axios from "axios";
 import { runTransaction, doc } from "firebase/firestore";
+import DamageDrawing from "./components/DamageDrawing";
 
 
 const obtenerIdCorrelativo = async (tipo: "checklist" | "fatiga") => {
@@ -96,7 +97,7 @@ export default function ChecklistForm() {
       }));
     }
   };
-
+  const [imagenDibujo, setImagenDibujo] = useState<string | null>(null);
   /** ✅ Función para manejar el envío del formulario a Firebase */
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -121,6 +122,21 @@ export default function ChecklistForm() {
           uploadedImages[`${item}_img`] = response.data.secure_url;
         }
       }
+      if (imagenDibujo) {
+        const dibujoForm = new FormData();
+        const dibujoBlob = await fetch(imagenDibujo).then(res => res.blob());
+        dibujoForm.append("file", dibujoBlob);
+        dibujoForm.append("upload_preset", process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!);
+      
+        const dibujoRes = await axios.post(
+          `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+          dibujoForm
+        );
+      
+        uploadedImages["danios_img"] = dibujoRes.data.secure_url;
+      }
+
+
       const itemsCriticos = [
         "Revisión técnica",
         "Permiso de Circulación",
@@ -241,6 +257,9 @@ export default function ChecklistForm() {
 
         {/* Sección de Checklist */}
         <ChecklistSection form={form} setForm={setForm} setImages={setImagenes} />
+
+        <h5 className="mt-4">Observaciones de Choques y/o Rayaduras</h5>
+        <DamageDrawing onSave={(dataUrl) => setImagenDibujo(dataUrl)} />
 
         {/* Observaciones */}
         <div className="mb-3">
