@@ -62,6 +62,7 @@ interface Formulario {
   observaciones: string;
   estado: "pendiente" | "aprobado" | "rechazado";
   aprobado_por?: string; // ✅ Agregado aquí
+  danios_img?: string; 
   vehiculo: {
     marca: string;
     modelo: string;
@@ -257,7 +258,27 @@ export default function ChecklistAtendidos() {
         y += 50;
       }
     }
-    
+    // 🖼️ Agregar imagen del dibujo de daños si existe
+if (form.danios_img) {
+  if (y + 60 > pageHeight - 20) {
+    addFooter();
+    doc.addPage();
+    y = 20;
+  }
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(12);
+  doc.text("Dibujo de daños en el bus", 14, y);
+  y += 8;
+
+  try {
+    doc.addImage(form.danios_img, "PNG", 14, y, 100, 60);
+    y += 70;
+  } catch (error) {
+    doc.text("⚠️ No se pudo cargar la imagen de daños.", 14, y + 10);
+    y += 20;
+  }
+}
   
     addFooter();
     doc.save(`reporte_${form.conductor}_${form.fecha_inspeccion}.pdf`);
