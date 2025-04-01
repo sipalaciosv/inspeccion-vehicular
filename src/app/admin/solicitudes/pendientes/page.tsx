@@ -228,7 +228,7 @@ export default function ChecklistPendientes() {
     }
   
     // 🖼️ Imágenes adjuntas
-    const imagenes = Object.entries(form.checklist).filter(([_, val]) => val.startsWith("https://"));
+    const imagenes = Object.entries(form.checklist).filter(([, val]) => val.startsWith("https://"));
     if (imagenes.length > 0) {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(12);
