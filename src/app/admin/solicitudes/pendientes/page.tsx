@@ -32,18 +32,18 @@ interface Formulario {
     kms_final: string;
   };
 }
-
+interface jsPDFWithAutoTable extends jsPDF {
+  lastAutoTable?: {
+    finalY: number;
+  };
+}
 export default function ChecklistPendientes() {
   const [formularios, setFormularios] = useState<Formulario[]>([]);
   const [busqueda, setBusqueda] = useState("");
   const [fechaDesde, setFechaDesde] = useState("");
   const [fechaHasta, setFechaHasta] = useState("");
   const [adminNombre, setAdminNombre] = useState<string | null>(null);
-  interface jsPDFWithAutoTable extends jsPDF {
-    lastAutoTable?: {
-      finalY: number;
-    };
-  }
+  
 
   useEffect(() => {
     const fetchFormularios = async () => {
@@ -228,7 +228,7 @@ export default function ChecklistPendientes() {
     }
   
     // 🖼️ Imágenes adjuntas
-    const imagenes = Object.entries(form.checklist).filter(([key, val]) => val.startsWith("https://"));
+    const imagenes = Object.entries(form.checklist).filter(([_, val]) => val.startsWith("https://"));
     if (imagenes.length > 0) {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(12);

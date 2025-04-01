@@ -274,7 +274,7 @@ if (form.danios_img) {
   try {
     doc.addImage(form.danios_img, "PNG", 14, y, 100, 60);
     y += 70;
-  } catch (error) {
+  } catch  {
     doc.text("⚠️ No se pudo cargar la imagen de daños.", 14, y + 10);
     y += 20;
   }
