@@ -1,30 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { auth, db } from "@/firebase";
+import { auth } from "@/firebase";
 import { useRouter } from "next/navigation";
-import { signOut, User } from "firebase/auth"; // 🔹 Importamos User
-import { doc, getDoc } from "firebase/firestore";
+import { signOut, User } from "firebase/auth";
+import withRoleProtection from "../../components/withRoleProtection";
 
-export default function AdminPanel() {
-  const [user, setUser] = useState<User | null>(null); // ✅ Ahora usamos User en lugar de any
-  const [isAdmin, setIsAdmin] = useState(false);
+function AdminPanel() {
+  const [user, setUser] = useState<User | null>(null);
   const router = useRouter();
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
+    const unsubscribe = auth.onAuthStateChanged((currentUser) => {
       if (!currentUser) {
         router.push("/login");
       } else {
         setUser(currentUser);
-        // Verificar si el usuario es admin en Firestore
-        const userDoc = await getDoc(doc(db, "usuarios", currentUser.uid));
-        if (userDoc.exists() && userDoc.data().role === "admin") {
-          setIsAdmin(true);
-        } else {
-          alert("Acceso denegado. No eres administrador.");
-          router.push("/"); // Redirigir a otra página si no es admin
-        }
       }
     });
 
@@ -37,7 +28,6 @@ export default function AdminPanel() {
   };
 
   if (!user) return <p className="text-center">Cargando...</p>;
-  if (!isAdmin) return <p className="text-center text-danger">Acceso denegado ❌</p>;
 
   return (
     <div className="container py-5">
@@ -49,3 +39,5 @@ export default function AdminPanel() {
     </div>
   );
 }
+
+export default withRoleProtection(AdminPanel, ["admin", "controlador"]);

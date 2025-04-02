@@ -4,11 +4,12 @@ import { useState } from "react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/firebase";
 import { useRouter } from "next/navigation";
+import Link from "next/link"; // 🆕 Importante
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string>(""); // 🔹 Se tipa como string
+  const [error, setError] = useState<string>("");
   const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -17,10 +18,10 @@ export default function Login() {
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      router.push("/admin"); // Redirigir al Panel de Admin
-    } catch (err: unknown) { // 🔹 Usamos `unknown` en lugar de `any`
+      router.push("/admin");
+    } catch (err: unknown) {
       if (err instanceof Error) {
-        setError(err.message); // 🔹 Mostramos el mensaje de error real
+        setError(err.message);
       } else {
         setError("❌ Ocurrió un error al iniciar sesión.");
       }
@@ -53,6 +54,11 @@ export default function Login() {
           />
         </div>
         <button type="submit" className="btn btn-primary w-100">Ingresar</button>
+
+        {/* 🔗 Enlace para recuperar contraseña */}
+        <div className="mt-3 text-center">
+          <Link href="/forgot-password">¿Olvidaste tu contraseña?</Link>
+        </div>
       </form>
     </div>
   );
