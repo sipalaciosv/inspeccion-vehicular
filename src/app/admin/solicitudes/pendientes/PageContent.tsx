@@ -8,7 +8,7 @@ import { db } from "@/firebase";
 import { collection, getDocs, updateDoc, doc } from "firebase/firestore";
 import Link from "next/link";
 import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+//import autoTable from "jspdf-autotable";
 import { auth } from "@/firebase";
 import { getDoc } from "firebase/firestore";
 
@@ -35,11 +35,11 @@ interface Formulario {
     kms_final: string;
   };
 }
-interface jsPDFWithAutoTable extends jsPDF {
-  lastAutoTable?: {
-    finalY: number;
-  };
-}
+// interface jsPDFWithAutoTable extends jsPDF {
+//   lastAutoTable?: {
+//     finalY: number;
+//   };
+// }
 export default function PageContent() {
   const { role, loading } = useUserRole();
   const [formularios, setFormularios] = useState<Formulario[]>([]);
