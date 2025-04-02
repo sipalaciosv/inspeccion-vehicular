@@ -138,7 +138,7 @@ export default function PageContent() {
       ["Hora", form.hora_inspeccion],
       ["Kilometraje", form.kilometraje || "N/A"],
       ["Estado", form.estado],
-      ["Aprobado por", form.aprobado_por || "Desconocido"],
+      ["Revisado por", form.aprobado_por || "Desconocido"],
       ["Observaciones", form.observaciones || "Ninguna"]
     ];
     
