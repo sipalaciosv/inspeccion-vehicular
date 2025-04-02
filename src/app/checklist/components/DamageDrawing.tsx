@@ -4,6 +4,8 @@ import { useRef, useState } from "react";
 import { ReactSketchCanvas, ReactSketchCanvasRef } from "react-sketch-canvas";
 import { Modal, Button } from "react-bootstrap";
 import { useEffect } from "react"; // asegúrate de tener esto arriba
+
+
 interface DamageDrawingProps {
   onSave: (dataUrl: string) => void;
 }
@@ -22,7 +24,7 @@ export default function DamageDrawing({ onSave }: DamageDrawingProps) {
       }
     };
     cargarPaths();
-  }, [show]);
+  }, [show, paths]);
   const handleSave = async () => {
     try {
       const canvas = canvasRef.current;

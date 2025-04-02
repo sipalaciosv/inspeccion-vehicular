@@ -1,12 +1,16 @@
 "use client";
-import { useEffect, useState } from "react";
+
+import { useEffect, useState, ComponentType } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/firebase";
 import { useRouter } from "next/navigation";
 
-export default function withRoleProtection(Component: any, allowedRoles: string[]) {
-  return function ProtectedComponent(props: any) {
+export default function withRoleProtection<T extends object>(
+  Component: ComponentType<T>,
+  allowedRoles: string[]
+) {
+  return function ProtectedComponent(props: T) {
     const router = useRouter();
     const [isAuthorized, setIsAuthorized] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -20,16 +24,17 @@ export default function withRoleProtection(Component: any, allowedRoles: string[
           if (allowedRoles.includes(role)) {
             setIsAuthorized(true);
           } else {
-            router.push("/unauthorized"); // redirige si no tiene permiso
+            router.push("/unauthorized");
           }
         } else {
-          router.push("/login"); // redirige si no está logeado
+          router.push("/login");
         }
+
         setLoading(false);
       });
 
       return () => unsubscribe();
-    }, []);
+    }, [router]); // ✅ Agregamos router como dependencia
 
     if (loading) return <div className="text-center mt-10">Cargando...</div>;
     if (!isAuthorized) return null;
