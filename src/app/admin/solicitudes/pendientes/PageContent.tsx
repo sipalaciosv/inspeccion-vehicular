@@ -95,209 +95,209 @@ export default function PageContent() {
   };
 
 
-  const handleDownloadPDF = async (form: Formulario) => {
-    const doc = new jsPDF("p", "mm", "a4") as jsPDFWithAutoTable;
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    let y = 20;
+  // const handleDownloadPDF = async (form: Formulario) => {
+  //   const doc = new jsPDF("p", "mm", "a4") as jsPDFWithAutoTable;
+  //   const pageWidth = doc.internal.pageSize.getWidth();
+  //   const pageHeight = doc.internal.pageSize.getHeight();
+  //   let y = 20;
   
-    // 🔹 Logo
-    const logo = await fetch("/tarapaca.png")
-      .then(res => res.blob())
-      .then(blob => new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.readAsDataURL(blob);
-      }));
+  //   // 🔹 Logo
+  //   const logo = await fetch("/tarapaca.png")
+  //     .then(res => res.blob())
+  //     .then(blob => new Promise<string>((resolve) => {
+  //       const reader = new FileReader();
+  //       reader.onload = () => resolve(reader.result as string);
+  //       reader.readAsDataURL(blob);
+  //     }));
   
-    doc.addImage(logo, "PNG", 14, 10, 30, 20);
+  //   doc.addImage(logo, "PNG", 14, 10, 30, 20);
   
-    // 🔸 Título
-    doc.setFontSize(16);
-    doc.setFont("helvetica", "bold");
-    doc.text("Checklist Buses Tarapacá", pageWidth / 2, 20, { align: "center" });
+  //   // 🔸 Título
+  //   doc.setFontSize(16);
+  //   doc.setFont("helvetica", "bold");
+  //   doc.text("Checklist Buses Tarapacá", pageWidth / 2, 20, { align: "center" });
   
-    y = 35;
-    doc.setLineWidth(0.5);
-    doc.line(14, y, pageWidth - 14, y);
-    y += 10;
+  //   y = 35;
+  //   doc.setLineWidth(0.5);
+  //   doc.line(14, y, pageWidth - 14, y);
+  //   y += 10;
   
-    // 🔸 Tabla 1: Datos del formulario
-    const datosFormulario = [
-      ["Conductor", form.conductor],
-      ["N° Interno", form.numero_interno],
-      ["Fecha", form.fecha_inspeccion],
-      ["Hora", form.hora_inspeccion],
-      ["Kilometraje", form.kilometraje || "N/A"],
-      ["Estado", form.estado],
-      ["Observaciones", form.observaciones || "Ninguna"]
-    ];
+  //   // 🔸 Tabla 1: Datos del formulario
+  //   const datosFormulario = [
+  //     ["Conductor", form.conductor],
+  //     ["N° Interno", form.numero_interno],
+  //     ["Fecha", form.fecha_inspeccion],
+  //     ["Hora", form.hora_inspeccion],
+  //     ["Kilometraje", form.kilometraje || "N/A"],
+  //     ["Estado", form.estado],
+  //     ["Observaciones", form.observaciones || "Ninguna"]
+  //   ];
   
-    const datosVehiculo = [
-      ["Marca", form.vehiculo.marca],
-      ["Modelo", form.vehiculo.modelo],
-      ["Patente", form.vehiculo.patente],
-      ["Año", form.vehiculo.ano || "N/A"],
-      ["Color", form.vehiculo.color || "N/A"]
-    ];
+  //   const datosVehiculo = [
+  //     ["Marca", form.vehiculo.marca],
+  //     ["Modelo", form.vehiculo.modelo],
+  //     ["Patente", form.vehiculo.patente],
+  //     ["Año", form.vehiculo.ano || "N/A"],
+  //     ["Color", form.vehiculo.color || "N/A"]
+  //   ];
   
-    autoTable(doc, {
-      startY: y,
-      head: [["Datos del Formulario", ""]],
-      body: datosFormulario,
-      styles: { fontSize: 10, cellPadding: 2 },
-      headStyles: { fillColor: [240, 240, 240], textColor: 0, fontStyle: "bold", halign: "center" },
-      margin: { left: 14, right: 14 },
-    });
+  //   autoTable(doc, {
+  //     startY: y,
+  //     head: [["Datos del Formulario", ""]],
+  //     body: datosFormulario,
+  //     styles: { fontSize: 10, cellPadding: 2 },
+  //     headStyles: { fillColor: [240, 240, 240], textColor: 0, fontStyle: "bold", halign: "center" },
+  //     margin: { left: 14, right: 14 },
+  //   });
   
-    y = doc.lastAutoTable?.finalY ?? y + 10;
+  //   y = doc.lastAutoTable?.finalY ?? y + 10;
   
-    // 🔸 Tabla 2: Datos del vehículo
-    autoTable(doc, {
-      startY: y,
-      head: [["Información del Vehículo", ""]],
-      body: datosVehiculo,
-      styles: { fontSize: 10, cellPadding: 2 },
-      headStyles: { fillColor: [240, 240, 240], textColor: 0, fontStyle: "bold", halign: "center" },
-      margin: { left: 14, right: 14 },
-    });
+  //   // 🔸 Tabla 2: Datos del vehículo
+  //   autoTable(doc, {
+  //     startY: y,
+  //     head: [["Información del Vehículo", ""]],
+  //     body: datosVehiculo,
+  //     styles: { fontSize: 10, cellPadding: 2 },
+  //     headStyles: { fillColor: [240, 240, 240], textColor: 0, fontStyle: "bold", halign: "center" },
+  //     margin: { left: 14, right: 14 },
+  //   });
   
-    y = doc.lastAutoTable?.finalY ?? y + 10;
+  //   y = doc.lastAutoTable?.finalY ?? y + 10;
   
-    // 🔸 Checklist por secciones
-    const secciones: { [key: string]: string[] } = {
-      "Sistema de Luces": [
-        "Luz delantera alta", "Luz delantera baja", "Luces de emergencia",
-        "Luces neblineros", "Luces direccionales delanteras", "Luces direccionales traseras", "Luces de salón"
-      ],
-      "Estado de Llantas y Neumáticos": [
-        "Llanta y neumático pos. 1", "Llanta y neumático pos. 2", "Llanta y neumático pos. 3",
-        "Llanta y neumático pos. 4", "Llanta y neumático pos. 5", "Llanta y neumático pos. 6",
-        "Llanta y neumático pos. 7", "Llanta y neumático pos. 8", "Llanta de repuesto"
-      ],
-      "Parte Exterior": [
-        "Parabrisas delantero", "Parabrisas trasero", "Limpia parabrisas",
-        "Vidrio de ventanas", "Espejos laterales", "Tapa de estanque combustible"
-      ],
-      "Parte Interna": [
-        "Estado de tablero/indicadores operativos", "Maxi brake", "Freno de servicio",
-        "Cinturón de seguridad conductor", "Cinturón de pasajeros", "Orden, limpieza y baño",
-        "Dirección", "Bocina", "Asientos", "Luces del salón de pasajeros"
-      ],
-      "Accesorios de Seguridad": [
-        "Conos de seguridad (3)", "Extintor (pasillo y cabina)", "Gata hidráulica",
-        "Chaleco reflectante", "Cuñas de seguridad (2)", "Botiquín", "Llave de rueda",
-        "Barrote de llave rueda", "Tubo de fuerza (1 metro)", "Multiplicador de fuerza", "Triangulos de seguridad (2)"
-      ],
-      "Documentación": [
-        "Revisión técnica", "Certificado de gases", "Permiso de Circulación",
-        "SOAP (seguro obligatorio)", "Padrón (inscripción)", "Cartolas de recorrido",
-        "Licencia de conducir", "Tarjeta SiB"
-      ],
-    };
+  //   // 🔸 Checklist por secciones
+  //   const secciones: { [key: string]: string[] } = {
+  //     "Sistema de Luces": [
+  //       "Luz delantera alta", "Luz delantera baja", "Luces de emergencia",
+  //       "Luces neblineros", "Luces direccionales delanteras", "Luces direccionales traseras", "Luces de salón"
+  //     ],
+  //     "Estado de Llantas y Neumáticos": [
+  //       "Llanta y neumático pos. 1", "Llanta y neumático pos. 2", "Llanta y neumático pos. 3",
+  //       "Llanta y neumático pos. 4", "Llanta y neumático pos. 5", "Llanta y neumático pos. 6",
+  //       "Llanta y neumático pos. 7", "Llanta y neumático pos. 8", "Llanta de repuesto"
+  //     ],
+  //     "Parte Exterior": [
+  //       "Parabrisas delantero", "Parabrisas trasero", "Limpia parabrisas",
+  //       "Vidrio de ventanas", "Espejos laterales", "Tapa de estanque combustible"
+  //     ],
+  //     "Parte Interna": [
+  //       "Estado de tablero/indicadores operativos", "Maxi brake", "Freno de servicio",
+  //       "Cinturón de seguridad conductor", "Cinturón de pasajeros", "Orden, limpieza y baño",
+  //       "Dirección", "Bocina", "Asientos", "Luces del salón de pasajeros"
+  //     ],
+  //     "Accesorios de Seguridad": [
+  //       "Conos de seguridad (3)", "Extintor (pasillo y cabina)", "Gata hidráulica",
+  //       "Chaleco reflectante", "Cuñas de seguridad (2)", "Botiquín", "Llave de rueda",
+  //       "Barrote de llave rueda", "Tubo de fuerza (1 metro)", "Multiplicador de fuerza", "Triangulos de seguridad (2)"
+  //     ],
+  //     "Documentación": [
+  //       "Revisión técnica", "Certificado de gases", "Permiso de Circulación",
+  //       "SOAP (seguro obligatorio)", "Padrón (inscripción)", "Cartolas de recorrido",
+  //       "Licencia de conducir", "Tarjeta SiB"
+  //     ],
+  //   };
   
-    for (const [titulo, items] of Object.entries(secciones)) {
-      if (y + 30 > pageHeight - 20) {
-        addFooter();
-        doc.addPage();
-        y = 20;
-      }
+  //   for (const [titulo, items] of Object.entries(secciones)) {
+  //     if (y + 30 > pageHeight - 20) {
+  //       addFooter();
+  //       doc.addPage();
+  //       y = 20;
+  //     }
   
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(12);
-      doc.text(titulo, 14, y);
-      y += 6;
+  //     doc.setFont("helvetica", "bold");
+  //     doc.setFontSize(12);
+  //     doc.text(titulo, 14, y);
+  //     y += 6;
   
-      autoTable(doc, {
-        startY: y,
-        head: [["Ítem", "Estado"]],
-        body: items.map(item => [item, form.checklist[item] || "N/A"]),
-        styles: { fontSize: 10, cellPadding: 2 },
-        headStyles: {
-          fillColor: [52, 58, 64],
-          textColor: 255,
-          fontStyle: "bold",
-          halign: "center",
-        },
-        bodyStyles: { halign: "left" },
-        didParseCell: (data) => {
-          if (data.section === 'body' && data.column.index === 1) {
-            const val = data.cell.text[0];
-            if (val === "B") data.cell.styles.textColor = [0, 150, 0];
-            else if (val === "M") data.cell.styles.textColor = [200, 0, 0];
-            else data.cell.styles.textColor = [100, 100, 100];
-          }
-        },
-        margin: { left: 14, right: 14 },
-      });
+  //     autoTable(doc, {
+  //       startY: y,
+  //       head: [["Ítem", "Estado"]],
+  //       body: items.map(item => [item, form.checklist[item] || "N/A"]),
+  //       styles: { fontSize: 10, cellPadding: 2 },
+  //       headStyles: {
+  //         fillColor: [52, 58, 64],
+  //         textColor: 255,
+  //         fontStyle: "bold",
+  //         halign: "center",
+  //       },
+  //       bodyStyles: { halign: "left" },
+  //       didParseCell: (data) => {
+  //         if (data.section === 'body' && data.column.index === 1) {
+  //           const val = data.cell.text[0];
+  //           if (val === "B") data.cell.styles.textColor = [0, 150, 0];
+  //           else if (val === "M") data.cell.styles.textColor = [200, 0, 0];
+  //           else data.cell.styles.textColor = [100, 100, 100];
+  //         }
+  //       },
+  //       margin: { left: 14, right: 14 },
+  //     });
   
-      y = doc.lastAutoTable?.finalY ?? y + 10;
-    }
+  //     y = doc.lastAutoTable?.finalY ?? y + 10;
+  //   }
   
-    // 🖼️ Imágenes adjuntas
-    const imagenes = Object.entries(form.checklist).filter(([, val]) => val.startsWith("https://"));
-    if (imagenes.length > 0) {
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(12);
-      doc.text("Imágenes Adjuntas", 14, y);
-      y += 8;
+  //   // 🖼️ Imágenes adjuntas
+  //   const imagenes = Object.entries(form.checklist).filter(([, val]) => val.startsWith("https://"));
+  //   if (imagenes.length > 0) {
+  //     doc.setFont("helvetica", "bold");
+  //     doc.setFontSize(12);
+  //     doc.text("Imágenes Adjuntas", 14, y);
+  //     y += 8;
   
-      for (const [item, url] of imagenes) {
-        if (y + 50 > pageHeight - 20) {
-          addFooter();
-          doc.addPage();
-          y = 20;
-        }
+  //     for (const [item, url] of imagenes) {
+  //       if (y + 50 > pageHeight - 20) {
+  //         addFooter();
+  //         doc.addPage();
+  //         y = 20;
+  //       }
   
-        doc.setFont("helvetica", "normal");
-        doc.text(`Ítem: ${item}`, 14, y);
+  //       doc.setFont("helvetica", "normal");
+  //       doc.text(`Ítem: ${item}`, 14, y);
   
-        try {
-          doc.addImage(url, "JPEG", 14, y + 5, 60, 40);
-        } catch {
-          doc.text("⚠️ Error al cargar imagen", 14, y + 10);
-        }
+  //       try {
+  //         doc.addImage(url, "JPEG", 14, y + 5, 60, 40);
+  //       } catch {
+  //         doc.text("⚠️ Error al cargar imagen", 14, y + 10);
+  //       }
   
-        y += 50;
-      }
-    }
+  //       y += 50;
+  //     }
+  //   }
   
-    // 📌 Imagen de daños
-    if (form.checklist.danios_img) {
-      if (y + 60 > pageHeight - 20) {
-        addFooter();
-        doc.addPage();
-        y = 20;
-      }
+  //   // 📌 Imagen de daños
+  //   if (form.checklist.danios_img) {
+  //     if (y + 60 > pageHeight - 20) {
+  //       addFooter();
+  //       doc.addPage();
+  //       y = 20;
+  //     }
   
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(12);
-      doc.text("Dibujo de daños en el bus", 14, y);
-      y += 8;
+  //     doc.setFont("helvetica", "bold");
+  //     doc.setFontSize(12);
+  //     doc.text("Dibujo de daños en el bus", 14, y);
+  //     y += 8;
   
-      try {
-        doc.addImage(form.checklist.danios_img, "PNG", 14, y, 100, 60);
-        y += 70;
-      } catch {
-        doc.text("⚠️ No se pudo cargar la imagen de daños.", 14, y + 10);
-        y += 20;
-      }
-    }
+  //     try {
+  //       doc.addImage(form.checklist.danios_img, "PNG", 14, y, 100, 60);
+  //       y += 70;
+  //     } catch {
+  //       doc.text("⚠️ No se pudo cargar la imagen de daños.", 14, y + 10);
+  //       y += 20;
+  //     }
+  //   }
   
-    addFooter();
-    doc.save(`reporte_${form.conductor}_${form.fecha_inspeccion}.pdf`);
+  //   addFooter();
+  //   doc.save(`reporte_${form.conductor}_${form.fecha_inspeccion}.pdf`);
   
-    function addFooter() {
-      const pageCount = doc.getNumberOfPages();
-      for (let i = 1; i <= pageCount; i++) {
-        doc.setPage(i);
-        doc.setFontSize(10);
-        doc.setTextColor(150);
-        doc.text(`Página ${i} de ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: "center" });
-        doc.text("Buses Tarapacá", 14, pageHeight - 10);
-      }
-    }
-  };
+  //   function addFooter() {
+  //     const pageCount = doc.getNumberOfPages();
+  //     for (let i = 1; i <= pageCount; i++) {
+  //       doc.setPage(i);
+  //       doc.setFontSize(10);
+  //       doc.setTextColor(150);
+  //       doc.text(`Página ${i} de ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: "center" });
+  //       doc.text("Buses Tarapacá", 14, pageHeight - 10);
+  //     }
+  //   }
+  // };
   
   
 
