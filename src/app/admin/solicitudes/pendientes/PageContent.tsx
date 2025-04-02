@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { db } from "@/firebase";
 import { collection, getDocs, updateDoc, doc } from "firebase/firestore";
 import Link from "next/link";
-import jsPDF from "jspdf";
+//import jsPDF from "jspdf";
 //import autoTable from "jspdf-autotable";
 import { auth } from "@/firebase";
 import { getDoc } from "firebase/firestore";
