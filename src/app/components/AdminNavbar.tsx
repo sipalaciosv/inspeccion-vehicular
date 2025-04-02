@@ -1,5 +1,7 @@
 "use client";
 
+import useUserRole from "@/hooks/useUserRole"; // 👈 nuevo import
+
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { auth } from "@/firebase";
@@ -8,6 +10,8 @@ import { useRouter } from "next/navigation";
 
 export default function AdminNavbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const { role, loading } = useUserRole(); // 👈 usamos el hook
+
   const router = useRouter();
 
   useEffect(() => {
@@ -23,6 +27,7 @@ export default function AdminNavbar() {
     await signOut(auth);
     router.push("/login");
   };
+  if (loading) return null; // O puedes mostrar un loading si prefieres
 
   return (
     <nav className="navbar navbar-expand-lg navbar-dark bg-primary">
@@ -33,8 +38,8 @@ export default function AdminNavbar() {
         </button>
         <div className={`collapse navbar-collapse ${isOpen ? "show" : ""}`}>
           <ul className="navbar-nav ms-auto">
-
-            {/* Checklist Dropdown */}
+  
+            {/* Checklist Dropdown (siempre visible) */}
             <li className="nav-item dropdown">
               <a className="nav-link dropdown-toggle" href="#" id="checklistDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                 Checklist
@@ -44,41 +49,46 @@ export default function AdminNavbar() {
                 <li><Link className="dropdown-item" href="/admin/solicitudes/atendidos">Atendidos</Link></li>
               </ul>
             </li>
-
-            {/* Gestión Dropdown */}
-            <li className="nav-item dropdown">
-              <a className="nav-link dropdown-toggle" href="#" id="gestionDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                Gestión
-              </a>
-              <ul className="dropdown-menu" aria-labelledby="gestionDropdown">
-                <li><Link className="dropdown-item" href="/admin/gestion/vehiculos">Vehículos</Link></li>
-                <li><Link className="dropdown-item" href="/admin/gestion/conductores">Conductores</Link></li>
-              </ul>
-            </li>
-
-            {/* Usuarios Dropdown */}
-            <li className="nav-item dropdown">
-              <a className="nav-link dropdown-toggle" href="#" id="usuariosDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                Usuarios
-              </a>
-              <ul className="dropdown-menu" aria-labelledby="usuariosDropdown">
-                <li><Link className="dropdown-item" href="/admin/usuarios/admins">Administradores</Link></li>
-              </ul>
-            </li>
-
+  
+            {/* Gestión Dropdown (solo para admin) */}
+            {role === "admin" && (
+              <li className="nav-item dropdown">
+                <a className="nav-link dropdown-toggle" href="#" id="gestionDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  Gestión
+                </a>
+                <ul className="dropdown-menu" aria-labelledby="gestionDropdown">
+                  <li><Link className="dropdown-item" href="/admin/gestion/vehiculos">Vehículos</Link></li>
+                  <li><Link className="dropdown-item" href="/admin/gestion/conductores">Conductores</Link></li>
+                </ul>
+              </li>
+            )}
+  
+            {/* Usuarios Dropdown (solo para admin) */}
+            {role === "admin" && (
+              <li className="nav-item dropdown">
+                <a className="nav-link dropdown-toggle" href="#" id="usuariosDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  Usuarios
+                </a>
+                <ul className="dropdown-menu" aria-labelledby="usuariosDropdown">
+                  <li><Link className="dropdown-item" href="/admin/usuarios/admins">Administradores</Link></li>
+                </ul>
+              </li>
+            )}
+  
             {/* 🌐 Panel Público */}
             <li className="nav-item">
               <Link className="nav-link" href="/checklist">🌐 Panel Público</Link>
             </li>
-
-            {/* Cerrar Sesión */}
+  
+            {/* 🔒 Cerrar Sesión */}
             <li className="nav-item">
               <button className="btn btn-danger ms-3" onClick={handleLogout}>Cerrar Sesión</button>
             </li>
-
+  
           </ul>
         </div>
       </div>
     </nav>
   );
+  
 }
