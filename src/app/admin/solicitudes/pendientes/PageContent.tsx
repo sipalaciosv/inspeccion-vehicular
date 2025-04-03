@@ -25,6 +25,7 @@ interface Formulario {
   observaciones: string;
   estado: "pendiente" | "aprobado" | "rechazado";
   aprobado_por?: string;
+  creado_por?: string;
   vehiculo: {
     marca: string;
     modelo: string;
@@ -355,6 +356,7 @@ export default function PageContent() {
             <tr>
               <th>ID</th>
               <th>Conductor</th>
+              <th>Generado por</th>
               <th>N° Vehículo</th>
               <th>Fecha</th>
               <th>Hora</th>
@@ -370,6 +372,7 @@ export default function PageContent() {
               <tr key={f.id}>
                 <td>{f.id_correlativo}</td>
                 <td>{f.conductor}</td>
+                <td>{f.creado_por || "Desconocido"}</td>
                 <td>{f.numero_interno}</td>
                 <td>{f.fecha_inspeccion}</td>
                 <td>{f.hora_inspeccion}</td>

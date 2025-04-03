@@ -62,6 +62,7 @@ interface Formulario {
   observaciones: string;
   estado: "pendiente" | "aprobado" | "rechazado";
   aprobado_por?: string; // ✅ Agregado aquí
+  creado_por?: string;
   danios_img?: string; 
   vehiculo: {
     marca: string;
@@ -139,6 +140,7 @@ export default function PageContent() {
       ["Kilometraje", form.kilometraje || "N/A"],
       ["Estado", form.estado],
       ["Revisado por", form.aprobado_por || "Desconocido"],
+      ["Creado por", form.creado_por || "N/A"], // ← NUEVO
       ["Observaciones", form.observaciones || "Ninguna"]
     ];
     
@@ -350,6 +352,7 @@ if (form.danios_img) {
             <tr>
               <th>ID</th>
               <th>Conductor</th>
+              <th>Creado por</th>  
               <th>N° Vehículo</th>
               <th>Fecha</th>
               <th>Hora</th>
@@ -364,6 +367,7 @@ if (form.danios_img) {
               <tr key={f.id}>
                 <td>{f.id_correlativo}</td>
                 <td>{f.conductor}</td>
+                <td>{f.creado_por || "N/A"}</td>  
                 <td>{f.numero_interno}</td>
                 <td>{f.fecha_inspeccion}</td>
                 <td>{f.hora_inspeccion}</td>
