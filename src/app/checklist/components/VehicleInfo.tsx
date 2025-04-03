@@ -1,4 +1,4 @@
-import { FormData } from "../page";
+import { FormData } from "../PageContent";
 
 interface VehicleProps {
   vehiculo: FormData["vehiculo"];
