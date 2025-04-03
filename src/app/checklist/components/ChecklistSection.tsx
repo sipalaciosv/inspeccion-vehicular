@@ -1,4 +1,4 @@
-import type { FormData } from "../page";
+import type { FormData } from "../PageContent";
 
 interface ChecklistSectionProps {
   form: FormData;
