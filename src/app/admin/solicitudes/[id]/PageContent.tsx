@@ -47,6 +47,7 @@ interface Formulario {
   checklist: { [key: string]: string };
   observaciones: string;
   estado: "pendiente" | "aprobado" | "rechazado";
+  creado_por?: string;
   vehiculo: {
     marca: string;
     modelo: string;
@@ -85,100 +86,121 @@ export default function PageContent() {
 
   return (
     <div className="container py-4">
-      <h2 className="text-center mb-4">🧾 Detalles de la Inspección</h2>
-
-      <div className="card mb-3">
-        <div className="card-header bg-secondary text-white">Información General</div>
-        <div className="card-body">
-          <p><strong>Conductor:</strong> {formulario.conductor}</p>
-          <p><strong>N° Vehículo:</strong> {formulario.numero_interno}</p>
-          <p><strong>Fecha:</strong> {formulario.fecha_inspeccion}</p>
-          <p><strong>Hora:</strong> {formulario.hora_inspeccion}</p>
-          <p><strong>Estado:</strong>{" "}
-            <span className={`badge bg-${formulario.estado === "aprobado" ? "success" : formulario.estado === "rechazado" ? "danger" : "warning"}`}>
-              {formulario.estado}
-            </span>
-          </p>
-          <p><strong>Kilometraje:</strong> {formulario.kilometraje}</p>
-        </div>
+    <div className="card">
+      <div className="card-header bg-dark text-white text-center">
+        🧾 Detalles de la Inspección
       </div>
-
-      <div className="card mb-3">
-        <div className="card-header bg-info text-white">Datos del Vehículo</div>
-        <div className="card-body">
-          <p><strong>Marca:</strong> {formulario.vehiculo.marca}</p>
-          <p><strong>Modelo:</strong> {formulario.vehiculo.modelo}</p>
-          <p><strong>Patente:</strong> {formulario.vehiculo.patente}</p>
-          <p><strong>Año:</strong> {formulario.vehiculo.ano}</p>
-          <p><strong>Color:</strong> {formulario.vehiculo.color}</p>
+      <div className="card-body">
+        
+        {/* Información General + Vehículo en 2 columnas */}
+        <div className="row mb-3">
+          <div className="col-md-6">
+            <div className="card h-100">
+              <div className="card-header bg-secondary text-white">Información General</div>
+              <div className="card-body">
+                <p><strong>Conductor:</strong> {formulario.conductor}</p>
+                <p><strong>Creado por:</strong> {formulario.creado_por || "Desconocido"}</p>
+                <p><strong>N° Vehículo:</strong> {formulario.numero_interno}</p>
+                <p><strong>Fecha:</strong> {formulario.fecha_inspeccion}</p>
+                <p><strong>Hora:</strong> {formulario.hora_inspeccion}</p>
+                <p><strong>Estado:</strong>{" "}
+                  <span className={`badge bg-${formulario.estado === "aprobado" ? "success" : formulario.estado === "rechazado" ? "danger" : "warning"}`}>
+                    {formulario.estado}
+                  </span>
+                </p>
+                <p><strong>Kilometraje:</strong> {formulario.kilometraje}</p>
+              </div>
+            </div>
+          </div>
+  
+          <div className="col-md-6">
+            <div className="card h-100">
+              <div className="card-header bg-info text-white">Datos del Vehículo</div>
+              <div className="card-body">
+                <p><strong>Marca:</strong> {formulario.vehiculo.marca}</p>
+                <p><strong>Modelo:</strong> {formulario.vehiculo.modelo}</p>
+                <p><strong>Patente:</strong> {formulario.vehiculo.patente}</p>
+                <p><strong>Año:</strong> {formulario.vehiculo.ano}</p>
+                <p><strong>Color:</strong> {formulario.vehiculo.color}</p>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-
-      <div className="card mb-3">
-        <div className="card-header bg-primary text-white">Observaciones</div>
-        <div className="card-body">
-          <p>{formulario.observaciones || "Sin observaciones registradas."}</p>
-        </div>
-      </div>
-
-      {/* Dibujo de daños si existe */}
-      {formulario.checklist["danios_img"] && (
+  
+        {/* Observaciones */}
         <div className="card mb-3">
-          <div className="card-header bg-danger text-white">Dibujo de Daños</div>
-          <div className="card-body text-center">
-            <Image src={formulario.checklist["danios_img"]} alt="Dibujo de daños" width={600} height={400} className="img-thumbnail" />
+          <div className="card-header bg-primary text-white">Observaciones</div>
+          <div className="card-body">
+            <p>{formulario.observaciones || "Sin observaciones registradas."}</p>
           </div>
         </div>
-      )}
-
-      {/* Checklist agrupado */}
-      {Object.entries(secciones).map(([seccion, items]) => (
-        <div className="card mb-3" key={seccion}>
-          <div className="card-header bg-dark text-white">{seccion}</div>
-          <div className="card-body p-0">
-            <table className="table table-striped mb-0">
-              <thead>
-                <tr>
-                  <th>Ítem</th>
-                  <th>Estado</th>
-                  <th>Imagen</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map(item => {
-                  const estado = formulario.checklist[item];
-                  const img = formulario.checklist[`${item}_img`];
-                  return (
-                    <tr key={item}>
-                      <td>{item}</td>
-                      <td>
-                        <span className={`badge bg-${estado === "B" ? "success" : estado === "M" ? "danger" : "secondary"}`}>
-                          {estado || "NA"}
-                        </span>
-                      </td>
-                      <td>
-                        {img ? (
-                          <Image
-                            src={img}
-                            alt={`Imagen de ${item}`}
-                            width={100}
-                            height={100}
-                            className="img-thumbnail"
-                          />
-                        ) : "Sin imagen"}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+  
+        {/* Dibujo de daños si existe */}
+        {formulario.checklist["danios_img"] && (
+          <div className="card mb-3">
+            <div className="card-header bg-danger text-white">Dibujo de Daños</div>
+            <div className="card-body text-center">
+              <Image src={formulario.checklist["danios_img"]} alt="Dibujo de daños" width={600} height={400} className="img-thumbnail" />
+            </div>
           </div>
-        </div>
-      ))}
+        )}
+  
+        {/* Checklist agrupado */}
+        {Object.entries(secciones).map(([seccion, items]) => (
+          <div className="card mb-3" key={seccion}>
+            <div className="card-header bg-dark text-white">{seccion}</div>
+            <div className="card-body p-0">
+              <table className="table table-striped mb-0">
+                <thead>
+                  <tr>
+                    <th className="w-50">Ítem</th>
+                    <th className="w-25">Estado</th>
+                    <th className="w-25">Imagen</th>
+                  </tr>
+                </thead>
+                <tbody>
+  {items.map(item => {
+    const estado = formulario.checklist[item];
+    const img = formulario.checklist[`${item}_img`];
+    return (
+      <tr key={item}>
+        <td>{item}</td>
+        <td>
+          <span className={`badge bg-${estado === "B" ? "success" : estado === "M" ? "danger" : "secondary"}`}>
+            {estado || "NA"}
+          </span>
+        </td>
+        <td>
+          {img ? (
+            <Image
+              src={img}
+              alt={`Imagen de ${item}`}
+              width={100}
+              height={100}
+              className="img-thumbnail"
+            />
+          ) : (
+            <>Sin imagen</>
+          )}
+        </td>
+      </tr>
+    );
+  })}
+</tbody>
 
-      <div className="text-center mt-4">
-        <Link href="/admin/solicitudes/pendientes" className="btn btn-secondary">⬅ Volver</Link>
+              </table>
+            </div>
+          </div>
+        ))}
+  
+        {/* Botón volver */}
+        <div className="text-center mt-4">
+          <Link href="/admin/solicitudes/pendientes" className="btn btn-secondary">⬅ Volver</Link>
+        </div>
+  
       </div>
     </div>
+  </div>
+  
   );
 }

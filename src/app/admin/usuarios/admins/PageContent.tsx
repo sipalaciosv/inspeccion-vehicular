@@ -55,7 +55,7 @@ export default function PageContent() {
           </tbody>
         </table>
         <div className="text-end mt-3">
-  <a href="/admin-register" className="btn btn-primary">Registrar Nuevo Admin</a>
+  <a href="/admin-register" className="btn btn-primary">Registrar Nuevo Usuario</a>
 </div>
 
       </div>
