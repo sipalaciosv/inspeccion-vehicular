@@ -24,7 +24,7 @@ interface FormularioFatiga {
 
 export default function PageContent() {
   const [formularios, setFormularios] = useState<FormularioFatiga[]>([]);
-  const { role: userRole, loading } = useUserRole();
+  const { role: userRole } = useUserRole();
 const [usuarioNombre, setUsuarioNombre] = useState("Desconocido");
 
 
