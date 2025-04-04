@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { db } from "@/firebase";
 import { collection, doc, getDocs, updateDoc, getDoc } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
 import Link from "next/link";
+import useUserRole from "@/hooks/useUserRole";
 
 interface FormularioFatiga {
   id: string;
@@ -24,36 +24,37 @@ interface FormularioFatiga {
 
 export default function PageContent() {
   const [formularios, setFormularios] = useState<FormularioFatiga[]>([]);
-  const [usuarioNombre, setUsuarioNombre] = useState("Desconocido");
-  const [userRole, setUserRole] = useState<string | null>(null);
+  const { role: userRole, loading } = useUserRole();
+const [usuarioNombre, setUsuarioNombre] = useState("Desconocido");
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const snapshot = await getDocs(collection(db, "fatiga_somnolencia"));
-      const data = snapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() } as FormularioFatiga))
-        .filter(f => f.estado === "pendiente")
-        .sort((a, b) => b.id_correlativo - a.id_correlativo);
-      setFormularios(data);
-    };
 
-    const obtenerInfoUsuario = async () => {
-      const auth = getAuth();
-      const user = auth.currentUser;
-      if (user) {
-        const docRef = doc(db, "usuarios", user.uid);
-        const userDoc = await getDoc(docRef);
-        if (userDoc.exists()) {
-          const data = userDoc.data();
-          setUsuarioNombre(data.nombre || user.email || "Desconocido");
-          setUserRole(data.rol || null);
-        }
+
+useEffect(() => {
+  const fetchData = async () => {
+    const snapshot = await getDocs(collection(db, "fatiga_somnolencia"));
+    const data = snapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() } as FormularioFatiga))
+      .filter(f => f.estado === "pendiente")
+      .sort((a, b) => b.id_correlativo - a.id_correlativo);
+    setFormularios(data);
+  };
+
+  const obtenerNombreUsuario = async () => {
+    const auth = await import("@/firebase").then(mod => mod.auth);
+    const user = auth.currentUser;
+    if (user) {
+      const userDoc = await getDoc(doc(db, "usuarios", user.uid));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        setUsuarioNombre(userData.nombre || user.email || "Desconocido");
       }
-    };
+    }
+  };
 
-    fetchData();
-    obtenerInfoUsuario();
-  }, []);
+  fetchData();
+  obtenerNombreUsuario();
+}, []);
+
 
   const aprobarFormulario = async (formulario: FormularioFatiga) => {
     await updateDoc(doc(db, "fatiga_somnolencia", formulario.id), {
@@ -74,6 +75,7 @@ export default function PageContent() {
   return (
     <div className="container py-4">
       <h2 className="text-center">Formularios de Fatiga Pendientes ⏳</h2>
+      
 
       <div className="table-responsive mt-3">
         <table className="table table-striped">
@@ -85,8 +87,9 @@ export default function PageContent() {
               <th>Destino</th>
               <th>Fecha</th>
               <th>Hora</th>
-              <th>Creado por</th>
-              {userRole === "admin" && <th>Acciones</th>}
+              <th>Realizado por</th>
+              {(userRole === "admin" || userRole === "controlador") && <th>Acciones</th>}
+
               <th>Visualizar</th>
             </tr>
           </thead>
@@ -100,14 +103,14 @@ export default function PageContent() {
                 <td>{f.fecha}</td>
                 <td>{f.hora_salida}</td>
                 <td>{f.creado_por || "N/A"}</td>
-                {userRole === "admin" && (
+                {(userRole === "admin" || userRole === "controlador") && (
                   <td>
                     <button className="btn btn-success btn-sm me-2" onClick={() => aprobarFormulario(f)}>Aprobar</button>
                     <button className="btn btn-danger btn-sm" onClick={() => rechazarFormulario(f)}>Rechazar</button>
                   </td>
                 )}
                 <td>
-                  <Link href={`/admin/fatiga/solicitudes/${f.id}`} className="btn btn-primary btn-sm">Ver Detalles</Link>
+                  <Link href={`/admin/solicitudes-fatiga/${f.id}`} className="btn btn-primary btn-sm">Ver Detalles</Link>
                 </td>
               </tr>
             ))}

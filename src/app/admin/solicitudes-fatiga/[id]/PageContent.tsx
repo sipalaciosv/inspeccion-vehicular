@@ -19,6 +19,7 @@ interface FormularioFatiga {
   estado: "pendiente" | "aprobado" | "rechazado";
   creado_por?: string;
   aprobado_por?: string;
+  firma_img?: string;
 }
 
 const preguntas = [
@@ -72,7 +73,7 @@ export default function PageContent() {
             <div className="col-md-6"><strong>Destino:</strong> {form.destino}</div>
             <div className="col-md-6"><strong>Hora de Salida:</strong> {form.hora_salida}</div>
             <div className="col-md-6"><strong>Fecha:</strong> {form.fecha}</div>
-            <div className="col-md-6"><strong>Creado por:</strong> {form.creado_por || "N/A"}</div>
+            <div className="col-md-6"><strong>Realizado por:</strong> {form.creado_por || "N/A"}</div>
             <div className="col-md-6"><strong>Revisado por:</strong> {form.aprobado_por || "Desconocido"}</div>
           </div>
 
@@ -92,6 +93,17 @@ export default function PageContent() {
               )}
             </div>
           ))}
+          {form.firma_img && (
+  <div className="mt-4 text-center">
+    <h5 className="mb-2">✍️ Firma del Responsable</h5>
+    <img
+      src={form.firma_img}
+      alt="Firma"
+      style={{ maxWidth: "300px", border: "1px solid #ccc", padding: "4px", borderRadius: "8px" }}
+    />
+  </div>
+)}
+
         </div>
       </div>
     </div>

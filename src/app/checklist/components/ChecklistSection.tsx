@@ -58,9 +58,23 @@ export default function ChecklistSection({ form, setForm, setImages }: Checklist
     <div className="container">
       {Object.entries(secciones).map(([titulo, items]) => (
         <div className="card mb-4" key={titulo}>
-          <div className="card-header bg-primary text-white">
-            {titulo}
-          </div>
+          <div className="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+  <span>{titulo}</span>
+  <button
+    type="button"
+    className="btn btn-sm btn-light"
+    onClick={() => {
+      const nuevos = items.reduce((acc, item) => ({ ...acc, [item]: "B" }), {});
+      setForm(prev => ({
+        ...prev,
+        checklist: { ...prev.checklist, ...nuevos }
+      }));
+    }}
+  >
+    Marcar todos como B
+  </button>
+</div>
+
           <div className="card-body">
             <div className="row">
               {items.map((item: string) => (

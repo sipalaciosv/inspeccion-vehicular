@@ -10,6 +10,10 @@ import { runTransaction, doc } from "firebase/firestore";
 import DamageDrawing from "./components/DamageDrawing";
 import { auth } from "@/firebase";
 import { getDoc } from "firebase/firestore";
+import { secciones } from "@/constants/checklist";
+import FirmaCanvas from "@/components/FirmaCanvas";
+import imageCompression from "browser-image-compression";
+
 
 const obtenerIdCorrelativo = async (tipo: "checklist" | "fatiga") => {
   const contadorRef = doc(db, "contadores", tipo);
@@ -57,6 +61,8 @@ export default function PageContent() {
     checklist: {},
     observaciones: "",
   });
+  const [firmaImg, setFirmaImg] = useState<string | null>(null);
+  const [firmaKey, setFirmaKey] = useState(0); // 👈 fuerza reinicio del canvas
 
   const [conductores, setConductores] = useState<string[]>([]);
   const [numerosInternos, setNumerosInternos] = useState<string[]>([]);
@@ -93,7 +99,8 @@ export default function PageContent() {
   
     fetchControlador();
   }, []);
-  
+  const [dibujoKey, setDibujoKey] = useState(0);
+
   const cargarDatosVehiculo = async (numeroInterno: string) => {
     const snapshot = await getDocs(collection(db, "vehiculos"));
     const vehiculo = snapshot.docs.find(doc => doc.data().numero_interno === numeroInterno)?.data();
@@ -116,23 +123,64 @@ export default function PageContent() {
     }
   };
   const [imagenDibujo, setImagenDibujo] = useState<string | null>(null);
+  
+  const comprimirImagen = async (archivo: Blob | File): Promise<File> => {
+    const file =
+      archivo instanceof File
+        ? archivo
+        : new File([archivo], "temp.png", { type: archivo.type });
+  
+    const opciones = {
+      maxSizeMB: 0.2,
+      maxWidthOrHeight: 1024,
+      useWebWorker: true,
+    };
+  
+    return await imageCompression(file, opciones);
+  };
+  
   /** ✅ Función para manejar el envío del formulario a Firebase */
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-   
-    if (isSubmitting) return; // ⛔ Evitar envío doble
-  setIsSubmitting(true);    // 🔒 Bloquea el botón
-
+  
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+  
     try {
-      console.log("✅ Enviando formulario con imágenes...");
-      // 🔹 Subir imágenes a Cloudinary antes de enviar el formulario
+      // ✅ Validar que se completaron todos los ítems del checklist
+      const totalEsperado = Object.values(secciones).flat().length;
+      const totalCompletado = Object.keys(form.checklist).length;
+      const opcionesValidas = ["B", "M", "NA"];
+      const tieneRespuestasInvalidas = Object.values(form.checklist).some(
+        val => !opcionesValidas.includes(val)
+      );
+  
+      if (totalCompletado !== totalEsperado || tieneRespuestasInvalidas) {
+        alert("❌ Debes responder todos los ítems del checklist antes de enviar.");
+        setIsSubmitting(false);
+        return;
+      }
+  
+      if (!firmaImg) {
+        alert("❌ Debes firmar antes de enviar el formulario.");
+        setIsSubmitting(false);
+        return;
+      }
+  
+      // ✅ Subir imágenes del checklist
       const uploadedImages: { [key: string]: string } = {};
       for (const item in imagenes) {
         if (imagenes[item]) {
+          const imagenOriginal = imagenes[item]!;
+          console.log(`📸 Imagen "${item}" original:`, imagenOriginal.size, "bytes");
+  
+          const imagenComprimida = await comprimirImagen(imagenOriginal);
+          console.log(`📉 Imagen "${item}" comprimida:`, imagenComprimida.size, "bytes");
+  
           const formData = new FormData();
-          formData.append("file", imagenes[item]!);
+          formData.append("file", imagenComprimida);
           formData.append("upload_preset", process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!);
-
+  
           const response = await axios.post(
             `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
             formData
@@ -140,34 +188,47 @@ export default function PageContent() {
           uploadedImages[`${item}_img`] = response.data.secure_url;
         }
       }
+  
+      // ✅ Procesar imagen del dibujo (con o sin rayones)
       if (imagenDibujo) {
-        const dibujoForm = new FormData();
         const dibujoBlob = await fetch(imagenDibujo).then(res => res.blob());
-        dibujoForm.append("file", dibujoBlob);
+        const dibujoComprimido = await comprimirImagen(dibujoBlob);
+        console.log("🚌 Dibujo original:", dibujoBlob.size, "bytes");
+        console.log("📉 Dibujo comprimido:", dibujoComprimido.size, "bytes");
+  
+        const dibujoForm = new FormData();
+        dibujoForm.append("file", dibujoComprimido);
         dibujoForm.append("upload_preset", process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!);
-      
+  
         const dibujoRes = await axios.post(
           `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
           dibujoForm
         );
-      
+  
         uploadedImages["danios_img"] = dibujoRes.data.secure_url;
       }
-
-
-      const itemsCriticos = [
-        "Revisión técnica",
-        "Permiso de Circulación",
-        "SOAP (seguro obligatorio)",
-        "Cartolas de recorrido",
-        "Licencia de conducir",
-        "Dirección"
-      ];
+  
+      // ✅ Subir firma
+      const firmaBlob = await fetch(firmaImg).then(res => res.blob());
+      const firmaComprimida = await comprimirImagen(firmaBlob);
+      console.log("✍️ Firma original:", firmaBlob.size, "bytes");
+      console.log("📉 Firma comprimida:", firmaComprimida.size, "bytes");
+  
+      const firmaForm = new FormData();
+      firmaForm.append("file", firmaComprimida);
+      firmaForm.append("upload_preset", process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!);
+  
+      const firmaRes = await axios.post(
+        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+        firmaForm
+      );
+      uploadedImages["firma_img"] = firmaRes.data.secure_url;
+  
+      // ✅ Guardar formulario en Firestore
+      const itemsCriticos: string[] = []; // define tus ítems críticos aquí si corresponde
       const hayCriticoMalo = itemsCriticos.some(item => form.checklist[item] === "M");
-
       const idCorrelativo = await obtenerIdCorrelativo("checklist");
-      console.log("✅ ID Correlativo:", idCorrelativo);
-      // 🔹 Guardar formulario en Firestore con URLs de imágenes
+      
       await addDoc(collection(db, "formularios"), {
         ...form,
         id_correlativo: idCorrelativo,
@@ -177,11 +238,14 @@ export default function PageContent() {
         aprobado_por: hayCriticoMalo ? "Autorechazo" : null,
         creado_por: controladorNombre || "Desconocido",
       });
-      alert(hayCriticoMalo
-        ? "❌ Formulario enviado pero fue rechazado automáticamente por ítems críticos."
-        : "✅ Formulario enviado exitosamente");
-      
-      
+  
+      alert(
+        hayCriticoMalo
+          ? "❌ Formulario enviado pero fue rechazado automáticamente por ítems críticos."
+          : "✅ Formulario enviado exitosamente"
+      );
+  
+      // ✅ Limpiar el formulario
       setForm({
         fecha_inspeccion: "",
         hora_inspeccion: "",
@@ -192,14 +256,19 @@ export default function PageContent() {
         checklist: {},
         observaciones: "",
       });
+      setImagenDibujo(null);
       setImagenes({});
+      setFirmaImg(null);
+      setFirmaKey(prev => prev + 1); // reiniciar canvas de firma
+      setDibujoKey(prev => prev + 1); // 🔄 reinicia canvas
     } catch (error) {
       console.error("❌ Error al enviar el formulario:", error);
       alert("❌ Error al enviar el formulario");
-    } finally{
-      setIsSubmitting(false); // ✅ Liberamos el botón
+    } finally {
+      setIsSubmitting(false);
     }
   };
+  
 
   return (
     <main className="container py-4">
@@ -278,7 +347,12 @@ export default function PageContent() {
         <ChecklistSection form={form} setForm={setForm} setImages={setImagenes} />
 
         <h5 className="mt-4">Observaciones de Choques y/o Rayaduras</h5>
-        <DamageDrawing onSave={(dataUrl) => setImagenDibujo(dataUrl)} />
+        <DamageDrawing
+  onSave={(dataUrl) => setImagenDibujo(dataUrl)}
+  resetKey={dibujoKey}
+  clearPreview={imagenDibujo === null} // 👈 limpia la vista previa
+/>
+
 
         {/* Observaciones */}
         <div className="mb-3">
@@ -290,6 +364,9 @@ export default function PageContent() {
             onChange={(e) => setForm({ ...form, observaciones: e.target.value })}
           />
         </div>
+        <h5 className="mt-4">Firma del responsable</h5>
+        <FirmaCanvas key={firmaKey} onSave={(dataUrl) => setFirmaImg(dataUrl)} />
+
 
         {/* Botón de Enviar */}
         <div className="text-center mt-3">
