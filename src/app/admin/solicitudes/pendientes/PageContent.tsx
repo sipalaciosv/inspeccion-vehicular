@@ -362,7 +362,8 @@ export default function PageContent() {
               <th>Hora</th>
               <th>No Conformidades</th>
               <th>Estado</th>
-              {role === "admin" && <th>Acciones</th>}
+              {(role === "admin" || role === "controlador") && <th>Acciones</th>}
+
 
               <th>Visualizar</th>
             </tr>
@@ -378,7 +379,7 @@ export default function PageContent() {
                 <td>{f.hora_inspeccion}</td>
                 <td><span className="badge bg-warning">{contarHallazgos(f.checklist)}</span></td>
                 <td><span className="badge bg-warning text-dark">{f.estado}</span></td>
-                {role === "admin" && (
+                {(role === "admin" || role === "controlador") && (
                   <td>
                     <button className="btn btn-success btn-sm me-2" onClick={() => handleAprobar(f.id)}>Aprobar</button>
                     <button className="btn btn-danger btn-sm" onClick={() => handleRechazar(f.id)}>Rechazar</button>

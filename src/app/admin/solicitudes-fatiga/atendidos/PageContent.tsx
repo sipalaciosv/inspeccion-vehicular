@@ -21,6 +21,7 @@ interface FormularioFatiga {
   estado: "aprobado" | "rechazado" | "pendiente";
   aprobado_por?: string;
   creado_por?: string;
+  firma_img?: string; 
 }
 
 export default function PageContent() {
@@ -96,7 +97,7 @@ export default function PageContent() {
       ["Tipo vehículo", form.tipo_vehiculo],
       ["Estado", form.estado],
       ["Revisado por", form.aprobado_por || "Desconocido"],
-      ["Creado por", form.creado_por || "N/A"]
+      ["Realizado por", form.creado_por || "N/A"]
     ];
   
     autoTable(doc, {
@@ -229,7 +230,7 @@ export default function PageContent() {
             <tr>
               <th>ID</th>
               <th>Conductor</th>
-              <th>Creado por</th>
+              <th>Realizado por</th>
               <th>Vehículo</th>
               <th>Fecha</th>
               <th>Hora</th>

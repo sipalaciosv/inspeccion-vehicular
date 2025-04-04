@@ -5,6 +5,7 @@ import { collection, addDoc, getDocs, runTransaction, doc } from "firebase/fires
 import { db } from "@/firebase";
 import { getAuth } from "firebase/auth";
 import { getDoc } from "firebase/firestore";
+import FirmaCanvas from "@/components/FirmaCanvas";
 interface FormularioFatiga {
   conductor: string;
   tipo_vehiculo: string;
@@ -44,6 +45,8 @@ export default function PageContent() {
   const [conductores, setConductores] = useState<string[]>([]);
   const [vehiculos, setVehiculos] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [firmaImg, setFirmaImg] = useState<string | null>(null);
+  const [firmaKey, setFirmaKey] = useState(0); // 👈 nuevo estado
 
   useEffect(() => {
     const fetchData = async () => {
@@ -90,7 +93,12 @@ export default function PageContent() {
     e.preventDefault();
     if (isSubmitting) return;
     setIsSubmitting(true);
-
+    if (!firmaImg) {
+      alert("⚠️ Debes firmar antes de enviar el formulario.");
+      setIsSubmitting(false);
+      return;
+    }
+    
     try {
       const idCorrelativo = await obtenerIdCorrelativo("fatiga");
 
@@ -104,12 +112,32 @@ export default function PageContent() {
           creadoPorNombre = userDoc.data().nombre || user.email;
         }
       }
+      let firmaUrl = null;
+
+if (firmaImg) {
+  const firmaForm = new FormData();
+  const firmaBlob = await fetch(firmaImg).then(res => res.blob());
+  firmaForm.append("file", firmaBlob);
+  firmaForm.append("upload_preset", process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!);
+
+  const firmaRes = await fetch(
+    `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+    {
+      method: "POST",
+      body: firmaForm
+    }
+  );
+
+  const firmaData = await firmaRes.json();
+  firmaUrl = firmaData.secure_url;
+}
 
       await addDoc(collection(db, "fatiga_somnolencia"), {
         ...form,
         id_correlativo: idCorrelativo,
         estado: "pendiente",
         creado_por: creadoPorNombre,
+        firma_img: firmaUrl
       });
 
       alert("✅ Formulario enviado exitosamente");
@@ -123,7 +151,11 @@ export default function PageContent() {
         fecha: "",
         respuestas: {},
         observaciones: {},
+        
       });
+      setFirmaImg(null);
+      setFirmaKey(prev => prev + 1); // 🔄 fuerza a reiniciar FirmaCanvas
+
     } catch (error) {
       console.error(error);
       alert("❌ Error al enviar el formulario");
@@ -218,6 +250,9 @@ export default function PageContent() {
             <p className="text-muted text-center fst-italic">
               Afirmo que lo registrado en este formato es conforme a lo verificado en la fecha y hora
             </p>
+            <h5 className="mt-4">Firma del responsable</h5>
+            <FirmaCanvas key={firmaKey} onSave={(dataUrl) => setFirmaImg(dataUrl)} />
+
 
             <div className="text-center mt-3">
               <button type="submit" className="btn btn-primary" disabled={isSubmitting}>

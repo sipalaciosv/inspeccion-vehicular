@@ -63,6 +63,8 @@ export default function PageContent() {
   const { id } = useParams();
   const [formulario, setFormulario] = useState<Formulario | null>(null);
   const [loading, setLoading] = useState(true);
+  const [mostrarModal, setMostrarModal] = useState(false);
+  const [imagenModal, setImagenModal] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchFormulario = async () => {
@@ -83,7 +85,8 @@ export default function PageContent() {
 
   if (loading) return <div className="text-center mt-5">🔄 Cargando...</div>;
   if (!formulario) return <div className="text-center mt-5 text-danger">❌ Formulario no encontrado</div>;
-
+  
+  
   return (
     <div className="container py-4">
     <div className="card">
@@ -99,7 +102,7 @@ export default function PageContent() {
               <div className="card-header bg-secondary text-white">Información General</div>
               <div className="card-body">
                 <p><strong>Conductor:</strong> {formulario.conductor}</p>
-                <p><strong>Creado por:</strong> {formulario.creado_por || "Desconocido"}</p>
+                <p><strong>Realizado por:</strong> {formulario.creado_por || "Desconocido"}</p>
                 <p><strong>N° Vehículo:</strong> {formulario.numero_interno}</p>
                 <p><strong>Fecha:</strong> {formulario.fecha_inspeccion}</p>
                 <p><strong>Hora:</strong> {formulario.hora_inspeccion}</p>
@@ -162,6 +165,7 @@ export default function PageContent() {
   {items.map(item => {
     const estado = formulario.checklist[item];
     const img = formulario.checklist[`${item}_img`];
+
     return (
       <tr key={item}>
         <td>{item}</td>
@@ -172,12 +176,17 @@ export default function PageContent() {
         </td>
         <td>
           {img ? (
-            <Image
+            <img
               src={img}
               alt={`Imagen de ${item}`}
               width={100}
               height={100}
               className="img-thumbnail"
+              style={{ cursor: "pointer" }}
+              onClick={() => {
+                setImagenModal(img);
+                setMostrarModal(true);
+              }}
             />
           ) : (
             <>Sin imagen</>
@@ -188,11 +197,27 @@ export default function PageContent() {
   })}
 </tbody>
 
+
               </table>
             </div>
           </div>
         ))}
-  
+        {/* Firma del responsable */}
+{formulario.checklist["firma_img"] && (
+  <div className="card mb-3">
+    <div className="card-header bg-success text-white">Firma del Responsable</div>
+    <div className="card-body text-center">
+      <Image
+        src={formulario.checklist["firma_img"]}
+        alt="Firma del responsable"
+        width={300}
+        height={150}
+        className="img-thumbnail"
+      />
+    </div>
+  </div>
+)}
+
         {/* Botón volver */}
         <div className="text-center mt-4">
           <Link href="/admin/solicitudes/pendientes" className="btn btn-secondary">⬅ Volver</Link>
@@ -200,6 +225,28 @@ export default function PageContent() {
   
       </div>
     </div>
+    {mostrarModal && imagenModal && (
+  <div
+    className="modal fade show d-block"
+    tabIndex={-1}
+    role="dialog"
+    style={{ backgroundColor: "rgba(0, 0, 0, 0.6)" }}
+    onClick={() => setMostrarModal(false)}
+  >
+    <div className="modal-dialog modal-lg modal-dialog-centered" role="document">
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h5 className="modal-title">Vista de imagen</h5>
+          <button type="button" className="btn-close" onClick={() => setMostrarModal(false)} />
+        </div>
+        <div className="modal-body text-center">
+          <img src={imagenModal} alt="Imagen grande" className="img-fluid" />
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
   </div>
   
   );

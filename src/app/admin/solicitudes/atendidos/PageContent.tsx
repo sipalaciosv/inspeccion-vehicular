@@ -6,6 +6,10 @@ import { collection, getDocs } from "firebase/firestore";
 import Link from "next/link";
 import jsPDF from "jspdf";
 import autoTable, { RowInput } from "jspdf-autotable";
+import { usePagination } from "@/hooks/usePagination";
+import Pagination from "@/components/Pagination";
+
+
 
 interface jsPDFWithAutoTable extends jsPDF {
   autoTable: (options: {
@@ -64,6 +68,7 @@ interface Formulario {
   aprobado_por?: string; // ✅ Agregado aquí
   creado_por?: string;
   danios_img?: string; 
+  firma_img?: string;
   vehiculo: {
     marca: string;
     modelo: string;
@@ -75,11 +80,12 @@ interface Formulario {
 }
 
 export default function PageContent() {
+  
   const [formularios, setFormularios] = useState<Formulario[]>([]);
   const [busqueda, setBusqueda] = useState("");
   const [fechaDesde, setFechaDesde] = useState("");
   const [fechaHasta, setFechaHasta] = useState("");
-
+  const ITEMS_PER_PAGE = 10;
   useEffect(() => {
     const fetchFormularios = async () => {
       const snapshot = await getDocs(collection(db, "formularios"));
@@ -95,43 +101,39 @@ export default function PageContent() {
 
   const contarHallazgos = (checklist: { [key: string]: string }) =>
     Object.values(checklist).filter(value => value === "M").length;
-  
   const handleDownloadPDF = async (form: Formulario) => {
     const doc = new jsPDF("p", "mm", "a4") as jsPDFWithAutoTable;
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     let y = 20;
   
-    const logo = await fetch("/tarapaca.png")
-      .then(res => res.blob())
-      .then(blob => new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.readAsDataURL(blob);
-      }));
+    const logo = await fetch("/tarapaca.png").then(res => res.blob()).then(blob => new Promise<string>(resolve => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.readAsDataURL(blob);
+    }));
   
     doc.addImage(logo, "PNG", 14, 10, 30, 20);
   
     const estadoIcon = form.estado === "aprobado" ? "/aprobado.png" : "/rechazado.png";
-    const iconBase64 = await fetch(estadoIcon)
-      .then(res => res.blob())
-      .then(blob => new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.readAsDataURL(blob);
-      }));
+    const iconBase64 = await fetch(estadoIcon).then(res => res.blob()).then(blob => new Promise<string>(resolve => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.readAsDataURL(blob);
+    }));
   
-    doc.addImage(iconBase64, "PNG", pageWidth - 30, 10, 12, 12);
+    doc.addImage(iconBase64, "PNG", pageWidth - 26, 12, 10, 10);
   
-    doc.setFontSize(16);
+    doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
     doc.text("Checklist Buses Tarapacá", pageWidth / 2, 20, { align: "center" });
   
     y = 35;
     doc.setLineWidth(0.5);
     doc.line(14, y, pageWidth - 14, y);
-    y += 10;
+    y += 6;
   
+    // Datos del formulario y vehículo
     const datosFormulario = [
       ["Conductor", form.conductor],
       ["N° Interno", form.numero_interno],
@@ -140,10 +142,9 @@ export default function PageContent() {
       ["Kilometraje", form.kilometraje || "N/A"],
       ["Estado", form.estado],
       ["Revisado por", form.aprobado_por || "Desconocido"],
-      ["Creado por", form.creado_por || "N/A"], // ← NUEVO
+      ["Realizado por", form.creado_por || "N/A"],
       ["Observaciones", form.observaciones || "Ninguna"]
     ];
-    
     const datosVehiculo = [
       ["Marca", form.vehiculo.marca],
       ["Modelo", form.vehiculo.modelo],
@@ -151,151 +152,173 @@ export default function PageContent() {
       ["Año", form.vehiculo.ano || "N/A"],
       ["Color", form.vehiculo.color || "N/A"]
     ];
+    const mergedBody = datosFormulario.map((fila, index) => {
+      const vehiculoFila = datosVehiculo[index];
+      return [fila[0], fila[1], vehiculoFila?.[0] || "", vehiculoFila?.[1] || ""];
+    });
   
     autoTable(doc, {
       startY: y,
-      head: [["Datos del Formulario", ""]],
-      body: datosFormulario,
-      styles: { fontSize: 10, cellPadding: 2 },
-      headStyles: {
-        fillColor: [240, 240, 240],
-        textColor: 0,
-        fontStyle: "bold",
-        halign: "center",
+      head: [[
+        { content: "Datos del Formulario", colSpan: 2, styles: { halign: "center", fillColor: [240, 240, 240] } },
+        { content: "Información del Vehículo", colSpan: 2, styles: { halign: "center", fillColor: [240, 240, 240] } }
+      ]],
+      body: mergedBody,
+      styles: { fontSize: 9, cellPadding: 1.5 },
+      headStyles: { textColor: 0, fontStyle: "bold" },
+      columnStyles: {
+        0: { cellWidth: 30 }, 1: { cellWidth: 50 },
+        2: { cellWidth: 30 }, 3: { cellWidth: 50 }
       },
-      margin: { left: 14, right: 14 },
+      margin: { left: 14, right: 14 }
     });
-    
-    y = ((doc as jsPDFWithAutoTable).lastAutoTable?.finalY ?? y) + 10;
-
-
-
-    
-    // Tabla 2: Información del Vehículo
-    autoTable(doc, {
-      startY: y,
-      head: [["Información del Vehículo", ""]],
-      body: datosVehiculo,
-      styles: { fontSize: 10, cellPadding: 2 },
-      headStyles: {
-        fillColor: [240, 240, 240],
-        textColor: 0,
-        fontStyle: "bold",
-        halign: "center",
-      },
-      margin: { left: 14, right: 14 },
-    });
-    
-    y = ((doc as jsPDFWithAutoTable).lastAutoTable?.finalY ?? y) + 10;
-
   
-    // ✅ Checklist agrupado por secciones
+    y = (doc.lastAutoTable?.finalY ?? y) + 6;
+  
+    // Secciones checklist
     for (const [titulo, items] of Object.entries(secciones)) {
-      if (y + 30 > pageHeight - 20) {
-        addFooter();
-        doc.addPage();
-        y = 20;
-      }
+      if (y + 30 > pageHeight - 20) { addFooter(); doc.addPage(); y = 20; }
   
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(12);
+      doc.setFontSize(11);
       doc.text(titulo, 14, y);
-      y += 6;
+      y += 4;
+  
+      const body = [];
+      for (let i = 0; i < items.length; i += 2) {
+        const row = [];
+        for (let j = 0; j < 2; j++) {
+          const item = items[i + j];
+          if (item) row.push(item, form.checklist[item] || "N/A");
+          else row.push("", "");
+        }
+        body.push(row);
+      }
   
       autoTable(doc, {
         startY: y,
-        head: [["Ítem", "Estado"]],
-        body: items.map(item => [item, form.checklist[item] || "N/A"]),
-        styles: { fontSize: 10, cellPadding: 2 },
+        head: [["Ítem", "Estado", "Ítem", "Estado"]],
+        body,
+        styles: { fontSize: 9, cellPadding: 1.5 },
         headStyles: {
           fillColor: [52, 58, 64],
           textColor: 255,
           fontStyle: 'bold',
-          halign: 'center',
+          halign: 'center'
         },
-        bodyStyles: {
-          halign: 'left',
-        },
+        bodyStyles: { halign: 'left' },
         didParseCell: (data) => {
-          if (data.section === 'body' && data.column.index === 1) {
+          if (data.section === 'body' && (data.column.index === 1 || data.column.index === 3)) {
             const value = data.cell.text[0];
-            if (value === "B") data.cell.styles.textColor = [0, 150, 0];
-            else if (value === "M") data.cell.styles.textColor = [200, 0, 0];
-            else data.cell.styles.textColor = [100, 100, 100];
+            data.cell.styles.textColor =
+              value === "B" ? [0, 150, 0] :
+              value === "M" ? [200, 0, 0] :
+              [100, 100, 100];
           }
         },
-        margin: { left: 14, right: 14 },
+        margin: { left: 14, right: 14 }
       });
   
-      y = ((doc as jsPDFWithAutoTable).lastAutoTable?.finalY ?? y) + 10;
-
+      y = (doc.lastAutoTable?.finalY ?? y) + 6;
     }
   
-    const imagenes = Object.entries(form.checklist).filter(([, estado]) =>
-      estado.startsWith("https://")
-    );
-    
-    if (imagenes.length > 0) {
+    // 🚌 Dibujo del bus
+    if (form.danios_img) {
+      if (y + 70 > pageHeight - 20) { addFooter(); doc.addPage(); y = 20; }
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(12);
-      doc.text("Imágenes Adjuntas", 14, y);
-      y += 8;
-    
-      for (const [item, url] of imagenes) {
-        if (y + 50 > pageHeight - 20) {
-          addFooter();
-          doc.addPage();
-          y = 20;
-        }
-    
+      doc.setFontSize(11);
+      doc.text("Dibujo de daños en el bus", 14, y);
+      y += 6;
+      try {
+        const width = pageWidth - 28;
+        doc.addImage(form.danios_img, "PNG", 14, y, width, 70);
+        y += 75;
+      } catch {
+        doc.text("⚠️ No se pudo cargar la imagen de daños.", 14, y);
+        y += 20;
+      }
+    }
+  
+    // 📸 Imágenes de ítems en mal estado (M)
+    const imagenesMalEstado = Object.entries(form.checklist)
+      .filter(([item, estado]) => estado === "M" && form.checklist[`${item}_img`]?.startsWith("https"));
+  
+    for (const [item] of imagenesMalEstado) {
+      const url = form.checklist[`${item}_img`];
+      if (!url) continue;
+  
+      if (y + 50 > pageHeight - 20) { addFooter(); doc.addPage(); y = 20; }
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(10);
+      doc.text(`Ítem con estado "M": ${item}`, 14, y);
+  
+      try {
+        doc.addImage(url, "JPEG", 14, y + 5, 60, 40);
+      } catch {
+        doc.text("⚠️ Error al cargar imagen", 14, y + 10);
+      }
+  
+      y += 50;
+    }
+  
+    // 📎 Otras imágenes
+    const otrasImagenes = Object.entries(form.checklist)
+      .filter(([k, v]) => k.endsWith("_img") && v.startsWith("https") &&
+        !imagenesMalEstado.some(([malKey]) => `${malKey}_img` === k));
+  
+    if (otrasImagenes.length > 0) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.text("Otras Imágenes Adjuntas", 14, y);
+      y += 6;
+  
+      for (const [item, url] of otrasImagenes) {
+        if (y + 50 > pageHeight - 20) { addFooter(); doc.addPage(); y = 20; }
         doc.setFont("helvetica", "normal");
-        doc.text(`Ítem: ${item}`, 14, y); // ✅ item sí se usa aquí
-    
+        doc.setFontSize(10);
+        doc.text(`Ítem: ${item.replace("_img", "")}`, 14, y);
         try {
           doc.addImage(url, "JPEG", 14, y + 5, 60, 40);
         } catch {
           doc.text("⚠️ Error al cargar imagen", 14, y + 10);
         }
-    
         y += 50;
       }
     }
-    // 🖼️ Agregar imagen del dibujo de daños si existe
-if (form.danios_img) {
-  if (y + 60 > pageHeight - 20) {
-    addFooter();
-    doc.addPage();
-    y = 20;
-  }
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
-  doc.text("Dibujo de daños en el bus", 14, y);
-  y += 8;
-
-  try {
-    doc.addImage(form.danios_img, "PNG", 14, y, 100, 60);
-    y += 70;
-  } catch  {
-    doc.text("⚠️ No se pudo cargar la imagen de daños.", 14, y + 10);
-    y += 20;
-  }
-}
+  
+    // ✍️ Firma
+    if (form.firma_img) {
+      if (y + 50 > pageHeight - 20) { addFooter(); doc.addPage(); y = 20; }
+  
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.text("Firma del Responsable", 14, y);
+      y += 6;
+  
+      try {
+        doc.addImage(form.firma_img, "PNG", 14, y, 80, 40);
+        y += 45;
+      } catch {
+        doc.text("⚠️ No se pudo cargar la firma.", 14, y + 10);
+        y += 20;
+      }
+    }
   
     addFooter();
-    doc.save(`reporte_${form.conductor}_${form.fecha_inspeccion}.pdf`);
+    doc.save(`checklist_${form.conductor}_${form.fecha_inspeccion}.pdf`);
   
     function addFooter() {
       const pageCount = doc.getNumberOfPages();
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
-        doc.setFontSize(10);
+        doc.setFontSize(9);
         doc.setTextColor(150);
         doc.text(`Página ${i} de ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: "center" });
         doc.text("Buses Tarapacá", 14, pageHeight - 10);
       }
     }
   };
+  
   
   
   
@@ -323,7 +346,17 @@ if (form.danios_img) {
 
     return coincide && dentroRango;
   };
+  const filtrados = formularios.filter(filtrar);
 
+  const {
+    currentPage,
+    totalPages,
+    paginatedItems,
+    handlePageChange,
+  } = usePagination<Formulario>({
+    items: filtrados,
+    itemsPerPage: ITEMS_PER_PAGE,
+  });
   return (
     <div className="container py-4">
       <h2 className="text-center">Formularios Checklist Atendidos ✅❌</h2>
@@ -352,7 +385,7 @@ if (form.danios_img) {
             <tr>
               <th>ID</th>
               <th>Conductor</th>
-              <th>Creado por</th>  
+              <th>Realizado por</th>  
               <th>N° Vehículo</th>
               <th>Fecha</th>
               <th>Hora</th>
@@ -363,7 +396,7 @@ if (form.danios_img) {
             </tr>
           </thead>
           <tbody>
-            {formularios.filter(filtrar).map(f => (
+          {paginatedItems.map(f => (
               <tr key={f.id}>
                 <td>{f.id_correlativo}</td>
                 <td>{f.conductor}</td>
@@ -391,11 +424,16 @@ if (form.danios_img) {
                 </td>
               </tr>
             ))}
-            {formularios.filter(filtrar).length === 0 && (
-              <tr><td colSpan={8} className="text-center">No hay resultados</td></tr>
-            )}
+            {filtrados.length === 0 && (
+  <tr><td colSpan={10} className="text-center">No hay resultados</td></tr>
+)}
           </tbody>
         </table>
+        <Pagination
+  currentPage={currentPage}
+  totalPages={totalPages}
+  onPageChange={handlePageChange}
+/>
       </div>
     </div>
   );
