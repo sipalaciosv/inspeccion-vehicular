@@ -85,8 +85,8 @@ export default function PageContent() {
   const [busqueda, setBusqueda] = useState("");
   const [fechaDesde, setFechaDesde] = useState("");
   const [fechaHasta, setFechaHasta] = useState("");
-  const ITEMS_PER_PAGE = 10;
-  
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
   useEffect(() => {
     const fetchFormularios = async () => {
       const snapshot = await getDocs(collection(db, "formularios"));
@@ -402,8 +402,13 @@ if (firmaImg) {
     handlePageChange,
   } = usePagination<Formulario>({
     items: filtrados,
-    itemsPerPage: ITEMS_PER_PAGE,
+    itemsPerPage: itemsPerPage,
   });
+  
+  useEffect(() => {
+    handlePageChange(1);
+  }, [itemsPerPage, handlePageChange]); // ✅ limpio y sin warning
+  
   return (
     <div className="container py-4">
       <h2 className="text-center">Formularios Checklist Atendidos ✅❌</h2>
@@ -424,6 +429,21 @@ if (firmaImg) {
         <div className="col-md-2 mb-2">
           <button className="btn btn-secondary w-100" onClick={limpiarFiltros}>Limpiar</button>
         </div>
+        <div className="col-md-2 mb-2">
+  <label className="form-label">Filas por página</label>
+  <select
+    className="form-select"
+    value={itemsPerPage}
+    onChange={(e) => setItemsPerPage(Number(e.target.value))}
+  >
+    <option value={5}>5</option>
+    <option value={10}>10</option>
+    <option value={20}>20</option>
+    <option value={50}>50</option>
+    <option value={100}>100</option>
+  </select>
+</div>
+
       </div>
 
       <div className="table-responsive">
