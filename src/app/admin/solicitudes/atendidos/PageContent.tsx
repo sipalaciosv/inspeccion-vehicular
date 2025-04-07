@@ -86,6 +86,7 @@ export default function PageContent() {
   const [fechaDesde, setFechaDesde] = useState("");
   const [fechaHasta, setFechaHasta] = useState("");
   const ITEMS_PER_PAGE = 10;
+  
   useEffect(() => {
     const fetchFormularios = async () => {
       const snapshot = await getDocs(collection(db, "formularios"));
@@ -298,25 +299,56 @@ if (daniosImg) {
       }
     }
   
-    // ✍️ Firma
-  // ✍️ Firma
+// ✍️ Firma
 const firmaImg = form.checklist?.firma_img;
+const hayImagenesMalEstado = imagenesMalEstado.length > 0;
+
 if (firmaImg) {
-  if (y + 50 > pageHeight - 20) { addFooter(); doc.addPage(); y = 20; }
+  const firmaAlturaPequeña = 15; // más chica
+  const firmaAncho = 30;         // más angosta
+  const espacioRequerido = firmaAlturaPequeña + 16;
+  const espacioRestante = pageHeight - y - 20;
+  const centroX = pageWidth / 2;
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
-  doc.text("Firma del Conductor", 14, y);
-  y += 6;
+  const dibujarFirmaCentrada = () => {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.text("Firma del Conductor", centroX, y, { align: "center" });
+    y += 5;
 
-  try {
-    doc.addImage(firmaImg, "PNG", 14, y, 80, 40);
-    y += 45;
-  } catch {
-    doc.text("⚠️ No se pudo cargar la firma.", 14, y + 10);
-    y += 20;
+    try {
+      // 🖋️ Dibujar firma primero
+      doc.addImage(firmaImg, "PNG", centroX - firmaAncho / 2, y, firmaAncho, firmaAlturaPequeña);
+
+      // ➖ Línea justo debajo de la firma
+      const lineaY = y + firmaAlturaPequeña + 2;
+      doc.setDrawColor(100);
+      doc.setLineWidth(0.5);
+      doc.line(centroX - 30, lineaY, centroX + 30, lineaY);
+
+      y += firmaAlturaPequeña + 8;
+    } catch {
+      doc.setFont("helvetica", "normal");
+      doc.text("⚠️ No se pudo cargar la firma.", 14, y + 10);
+      y += 20;
+    }
+  };
+
+  if (!hayImagenesMalEstado && espacioRestante >= espacioRequerido) {
+    // ✅ Cabe debajo del bus, centrado
+    dibujarFirmaCentrada();
+  } else {
+    // ➕ Otras condiciones: nueva página
+    if (y + espacioRequerido > pageHeight - 20) {
+      addFooter();
+      doc.addPage();
+      y = 20;
+    }
+    dibujarFirmaCentrada();
   }
 }
+
+
 
   
     addFooter();
