@@ -231,8 +231,10 @@ export default function PageContent() {
       y += 6;
       try {
         const width = pageWidth - 28;
-        doc.addImage(form.danios_img, "PNG", 14, y, width, 70);
-        y += 75;
+        const maxImageWidth = pageWidth - 28;
+const maxImageHeight = 100; // antes era 70
+doc.addImage(form.danios_img, "PNG", 14, y, maxImageWidth, maxImageHeight);
+y += maxImageHeight + 5;
       } catch {
         doc.text("⚠️ No se pudo cargar la imagen de daños.", 14, y);
         y += 20;

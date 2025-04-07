@@ -54,30 +54,23 @@ export default function PageContent() {
     const pageHeight = doc.internal.pageSize.getHeight();
     let y = 20;
   
-    // Logo
-    const logo = await fetch("/tarapaca.png")
-      .then(res => res.blob())
-      .then(blob => new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.readAsDataURL(blob);
-      }));
+    const logo = await fetch("/tarapaca.png").then(res => res.blob()).then(blob => new Promise<string>((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.readAsDataURL(blob);
+    }));
   
     doc.addImage(logo, "PNG", 14, 10, 30, 20);
   
-    // Icono de estado
     const estadoIcon = form.estado === "aprobado" ? "/aprobado.png" : "/rechazado.png";
-    const iconBase64 = await fetch(estadoIcon)
-      .then(res => res.blob())
-      .then(blob => new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.readAsDataURL(blob);
-      }));
+    const iconBase64 = await fetch(estadoIcon).then(res => res.blob()).then(blob => new Promise<string>((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.readAsDataURL(blob);
+    }));
   
     doc.addImage(iconBase64, "PNG", pageWidth - 30, 10, 12, 12);
   
-    // Título
     doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
     doc.text("Control de Fatiga y Somnolencia", pageWidth / 2, 20, { align: "center" });
@@ -87,7 +80,6 @@ export default function PageContent() {
     doc.line(14, y, pageWidth - 14, y);
     y += 10;
   
-    // Datos del formulario
     const datos = [
       ["Conductor", form.conductor],
       ["N° Interno", form.numero_interno],
@@ -97,7 +89,7 @@ export default function PageContent() {
       ["Tipo vehículo", form.tipo_vehiculo],
       ["Estado", form.estado],
       ["Revisado por", form.aprobado_por || "Desconocido"],
-      ["Realizado por", form.creado_por || "N/A"]
+      ["Generador por", form.creado_por || "N/A"]
     ];
   
     autoTable(doc, {
@@ -109,14 +101,13 @@ export default function PageContent() {
         fillColor: [240, 240, 240],
         textColor: 0,
         fontStyle: "bold",
-        halign: "center",
+        halign: "center"
       },
-      margin: { left: 14, right: 14 },
+      margin: { left: 14, right: 14 }
     });
   
     y = (doc.lastAutoTable?.finalY ?? y) + 10;
   
-    // Preguntas y respuestas
     const preguntas = [
       "¿Ha dormido lo suficiente?",
       "¿Sin problemas de salud?",
@@ -129,10 +120,9 @@ export default function PageContent() {
       "¿Se siente fatigado?"
     ];
   
-    const respuestas = Object.entries(form.respuestas).map(([idx, val]) => [
-      `${+idx + 1}. ${preguntas[+idx]}`,
-      val
-    ]);
+    const respuestas = Object.entries(form.respuestas).map(([idx, val]) => {
+      return [`${+idx + 1}. ${preguntas[+idx]}`, val];
+    });
   
     autoTable(doc, {
       startY: y,
@@ -145,8 +135,50 @@ export default function PageContent() {
         fontStyle: "bold",
         halign: "center"
       },
+      bodyStyles: {
+        halign: "left"
+      },
+      didParseCell: data => {
+        if (data.section === 'body' && data.column.index === 1) {
+          const idx = data.row.index;
+          const respuesta = data.cell.text[0];
+  
+          // Preguntas donde "NO" es lo esperable
+          const negativasEsperadas = [5, 7, 8];
+  
+          const esEsperada = negativasEsperadas.includes(idx)
+            ? respuesta === "NO"
+            : respuesta === "SI";
+  
+          data.cell.styles.textColor = esEsperada ? [0, 140, 0] : [200, 0, 0];
+          data.cell.styles.fontStyle = "bold";
+        }
+      },
       margin: { left: 14, right: 14 }
     });
+  
+    y = (doc.lastAutoTable?.finalY ?? y) + 10;
+  
+    if (form.firma_img) {
+      if (y + 45 > pageHeight - 20) {
+        addFooter();
+        doc.addPage();
+        y = 20;
+      }
+  
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.text("Firma del Conductor", 14, y);
+      y += 6;
+  
+      try {
+        doc.addImage(form.firma_img, "PNG", 14, y, 80, 40);
+        y += 45;
+      } catch {
+        doc.text("⚠️ No se pudo cargar la firma.", 14, y + 10);
+        y += 20;
+      }
+    }
   
     addFooter();
     doc.save(`fatiga_${form.conductor}_${form.fecha}.pdf`);
@@ -162,6 +194,7 @@ export default function PageContent() {
       }
     }
   };
+  
   
   
   const limpiarFiltros = () => {

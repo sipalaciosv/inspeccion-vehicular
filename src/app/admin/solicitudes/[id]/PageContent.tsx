@@ -205,7 +205,7 @@ export default function PageContent() {
         {/* Firma del responsable */}
 {formulario.checklist["firma_img"] && (
   <div className="card mb-3">
-    <div className="card-header bg-success text-white">Firma del Responsable</div>
+    <div className="card-header bg-success text-white">Firma del Conductor</div>
     <div className="card-body text-center">
       <Image
         src={formulario.checklist["firma_img"]}
