@@ -2,7 +2,7 @@
 import type { CanvasPath } from "react-sketch-canvas";
 import { useRef, useState, useEffect } from "react";
 import { ReactSketchCanvas, ReactSketchCanvasRef } from "react-sketch-canvas";
-import { Modal, Button } from "react-bootstrap";
+import { Modal, Button, Form } from "react-bootstrap";
 
 interface DamageDrawingProps {
   onSave: (dataUrl: string) => void;
@@ -15,8 +15,8 @@ export default function DamageDrawing({ onSave, resetKey, clearPreview = false }
   const [show, setShow] = useState(false);
   const [paths, setPaths] = useState<CanvasPath[] | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [strokeWidth, setStrokeWidth] = useState(3); // 👉 nuevo estado
 
-  // 🔄 Limpia canvas y paths si cambia resetKey (después de envío)
   useEffect(() => {
     if (canvasRef.current) {
       canvasRef.current.clearCanvas();
@@ -24,14 +24,10 @@ export default function DamageDrawing({ onSave, resetKey, clearPreview = false }
     }
   }, [resetKey]);
 
-  // ✅ Limpia solo vista previa si corresponde
   useEffect(() => {
-    if (clearPreview) {
-      setPreviewUrl(null);
-    }
+    if (clearPreview) setPreviewUrl(null);
   }, [clearPreview]);
 
-  // 🔁 Cada vez que se abre el modal, recarga trazos si existen
   useEffect(() => {
     const cargarPaths = async () => {
       if (show && paths && canvasRef.current) {
@@ -69,7 +65,6 @@ export default function DamageDrawing({ onSave, resetKey, clearPreview = false }
         ctx.drawImage(overlayImage, 0, 0, width, height);
         const finalDataUrl = combinedCanvas.toDataURL("image/png");
 
-        // ✅ Guarda los paths dibujados
         const currentPaths = await canvas.exportPaths();
         setPaths(currentPaths || null);
 
@@ -117,6 +112,16 @@ export default function DamageDrawing({ onSave, resetKey, clearPreview = false }
         </Modal.Header>
 
         <Modal.Body>
+          <div className="mb-3">
+            <label><strong>Grosor del trazo: {strokeWidth}px</strong></label>
+            <Form.Range
+              min={1}
+              max={10}
+              value={strokeWidth}
+              onChange={(e) => setStrokeWidth(+e.target.value)}
+            />
+          </div>
+
           <div style={{ position: "relative", width: "100%", height: "auto" }}>
             <img
               src="/bus1.jpg"
@@ -126,7 +131,7 @@ export default function DamageDrawing({ onSave, resetKey, clearPreview = false }
             <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}>
               <ReactSketchCanvas
                 ref={canvasRef}
-                strokeWidth={3}
+                strokeWidth={strokeWidth}
                 strokeColor="red"
                 canvasColor="transparent"
                 style={{ width: "100%", height: "100%" }}

@@ -250,7 +250,7 @@ if (firmaImg) {
             <p className="text-muted text-center fst-italic">
               Afirmo que lo registrado en este formato es conforme a lo verificado en la fecha y hora
             </p>
-            <h5 className="mt-4">Firma del responsable</h5>
+            <h5 className="mt-4">Firma del Conductor</h5>
             <FirmaCanvas key={firmaKey} onSave={(dataUrl) => setFirmaImg(dataUrl)} />
 
 

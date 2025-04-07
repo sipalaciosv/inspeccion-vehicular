@@ -80,22 +80,31 @@ export default function PageContent() {
           <hr className="my-4" />
 
           <h5 className="mb-3">📋 Cuestionario</h5>
-          {preguntas.map((pregunta, index) => (
-            <div key={index} className="mb-3">
-              <p className="fw-bold">
-                {index + 1}. {pregunta}
-              </p>
-              <span className={`badge bg-${form.respuestas[index] === "SI" ? "success" : "danger"} me-2`}>
-                {form.respuestas[index]}
-              </span>
-              {form.observaciones[index] && (
-                <p className="mt-1"><strong>📝 Observación:</strong> {form.observaciones[index]}</p>
-              )}
-            </div>
-          ))}
+          {preguntas.map((pregunta, index) => {
+  const respuesta = form.respuestas[index];
+  const negativasEsperadas = [5, 7, 8]; // índices donde se espera "NO"
+  const esEsperada = negativasEsperadas.includes(index)
+    ? respuesta === "NO"
+    : respuesta === "SI";
+
+  return (
+    <div key={index} className="mb-3">
+      <p className="fw-bold">
+        {index + 1}. {pregunta}
+      </p>
+      <span className={`badge bg-${esEsperada ? "success" : "danger"} me-2`}>
+        {respuesta}
+      </span>
+      {form.observaciones[index] && (
+        <p className="mt-1"><strong>📝 Observación:</strong> {form.observaciones[index]}</p>
+      )}
+    </div>
+  );
+})}
+
           {form.firma_img && (
   <div className="mt-4 text-center">
-    <h5 className="mb-2">✍️ Firma del Responsable</h5>
+    <h5 className="mb-2">✍️ Firma del Conductor</h5>
     <img
       src={form.firma_img}
       alt="Firma"
