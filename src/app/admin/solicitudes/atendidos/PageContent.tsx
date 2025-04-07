@@ -223,23 +223,27 @@ export default function PageContent() {
     }
   
     // 🚌 Dibujo del bus
-    if (form.danios_img) {
-      if (y + 70 > pageHeight - 20) { addFooter(); doc.addPage(); y = 20; }
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(11);
-      doc.text("Dibujo de daños en el bus", 14, y);
-      y += 6;
-      try {
-        const width = pageWidth - 28;
-        const maxImageWidth = pageWidth - 28;
-const maxImageHeight = 100; // antes era 70
-doc.addImage(form.danios_img, "PNG", 14, y, maxImageWidth, maxImageHeight);
-y += maxImageHeight + 5;
-      } catch {
-        doc.text("⚠️ No se pudo cargar la imagen de daños.", 14, y);
-        y += 20;
-      }
-    }
+    // 🚌 Dibujo del bus
+const daniosImg = form.checklist?.danios_img;
+if (daniosImg) {
+  if (y + 100 > pageHeight - 20) { addFooter(); doc.addPage(); y = 20; }
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.text("Dibujo de daños en el bus", 14, y);
+  y += 6;
+
+  try {
+    const maxImageWidth = pageWidth - 28;
+    const maxImageHeight = 100;
+    doc.addImage(daniosImg, "PNG", 14, y, maxImageWidth, maxImageHeight);
+    y += maxImageHeight + 5;
+  } catch {
+    doc.text("⚠️ No se pudo cargar la imagen de daños.", 14, y);
+    y += 20;
+  }
+}
+
   
     // 📸 Imágenes de ítems en mal estado (M)
     const imagenesMalEstado = Object.entries(form.checklist)
@@ -265,8 +269,14 @@ y += maxImageHeight + 5;
   
     // 📎 Otras imágenes
     const otrasImagenes = Object.entries(form.checklist)
-      .filter(([k, v]) => k.endsWith("_img") && v.startsWith("https") &&
-        !imagenesMalEstado.some(([malKey]) => `${malKey}_img` === k));
+    .filter(([k, v]) =>
+      k.endsWith("_img") &&
+      v.startsWith("https") &&
+      !imagenesMalEstado.some(([malKey]) => `${malKey}_img` === k) &&
+      k !== "danios_img" &&
+      k !== "firma_img"
+    );
+  
   
     if (otrasImagenes.length > 0) {
       doc.setFont("helvetica", "bold");
@@ -289,22 +299,25 @@ y += maxImageHeight + 5;
     }
   
     // ✍️ Firma
-    if (form.firma_img) {
-      if (y + 50 > pageHeight - 20) { addFooter(); doc.addPage(); y = 20; }
-  
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(11);
-      doc.text("Firma del Responsable", 14, y);
-      y += 6;
-  
-      try {
-        doc.addImage(form.firma_img, "PNG", 14, y, 80, 40);
-        y += 45;
-      } catch {
-        doc.text("⚠️ No se pudo cargar la firma.", 14, y + 10);
-        y += 20;
-      }
-    }
+  // ✍️ Firma
+const firmaImg = form.checklist?.firma_img;
+if (firmaImg) {
+  if (y + 50 > pageHeight - 20) { addFooter(); doc.addPage(); y = 20; }
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.text("Firma del Conductor", 14, y);
+  y += 6;
+
+  try {
+    doc.addImage(firmaImg, "PNG", 14, y, 80, 40);
+    y += 45;
+  } catch {
+    doc.text("⚠️ No se pudo cargar la firma.", 14, y + 10);
+    y += 20;
+  }
+}
+
   
     addFooter();
     doc.save(`checklist_${form.conductor}_${form.fecha_inspeccion}.pdf`);

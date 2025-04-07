@@ -364,7 +364,7 @@ export default function PageContent() {
             onChange={(e) => setForm({ ...form, observaciones: e.target.value })}
           />
         </div>
-        <h5 className="mt-4">Firma del responsable</h5>
+        <h5 className="mt-4">Firma del Conductor</h5>
         <FirmaCanvas key={firmaKey} onSave={(dataUrl) => setFirmaImg(dataUrl)} />
 
 
