@@ -67,6 +67,7 @@ interface Formulario {
   estado: "pendiente" | "aprobado" | "rechazado";
   aprobado_por?: string; // ✅ Agregado aquí
   creado_por?: string;
+  hallazgos: number; 
   danios_img?: string; 
   firma_img?: string;
   vehiculo: {
@@ -89,7 +90,8 @@ export default function PageContent() {
 
   useEffect(() => {
     const fetchFormularios = async () => {
-      const snapshot = await getDocs(collection(db, "formularios"));
+      const snapshot = await getDocs(collection(db, "checklist_atendidos"));
+
       const data = snapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() } as Formulario))
         .filter(f => f.estado !== "pendiente")
@@ -100,8 +102,7 @@ export default function PageContent() {
     fetchFormularios();
   }, []);
 
-  const contarHallazgos = (checklist: { [key: string]: string }) =>
-    Object.values(checklist).filter(value => value === "M").length;
+ 
   const handleDownloadPDF = async (form: Formulario) => {
     const doc = new jsPDF("p", "mm", "a4") as jsPDFWithAutoTable;
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -313,7 +314,8 @@ if (firmaImg) {
   const dibujarFirmaCentrada = () => {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
-    doc.text("Firma del Conductor", centroX, y, { align: "center" });
+    doc.text(`Firma del conductor: ${form.conductor}`, centroX, y, { align: "center" });
+
     y += 5;
 
     try {
@@ -471,7 +473,8 @@ if (firmaImg) {
                 <td>{f.numero_interno}</td>
                 <td>{f.fecha_inspeccion}</td>
                 <td>{f.hora_inspeccion}</td>
-                <td><span className="badge bg-warning">{contarHallazgos(f.checklist)}</span></td>
+                <td><span className="badge bg-warning">{f.hallazgos ?? 0}</span></td>
+
       <td>
         <span className={`badge bg-${f.estado === "aprobado" ? "success" : "danger"}`}>
           {f.estado}
@@ -479,7 +482,10 @@ if (firmaImg) {
       </td>
       <td>{f.aprobado_por || "Desconocido"}</td>
                 <td>
-                  <Link href={`/admin/solicitudes/${f.id}`} className="btn btn-primary btn-sm me-2">Ver Detalles</Link>
+                <Link href={`/admin/solicitudes/${f.id}?from=atendidos`} className="btn btn-primary btn-sm me-2">
+  Ver Detalles
+</Link>
+
                   {/* Puedes añadir botón de PDF aquí si lo deseas */}
                   <button
   className="btn btn-secondary btn-sm"

@@ -12,6 +12,7 @@ import {
   getDocs,
   deleteDoc,
   addDoc,
+  setDoc,
 } from "firebase/firestore";
 import Image from "next/image";
 import Link from "next/link";
@@ -91,6 +92,7 @@ export default function PageContent() {
         if (snap.exists()) {
           setAdminNombre(snap.data().nombre);
         }
+        
       }
     };
     fetchAdmin();
@@ -117,6 +119,9 @@ export default function PageContent() {
         setFormulario({ id: generalSnap.id, ...generalSnap.data() } as FormularioGeneral);
         setDetalle(detalleSnap.docs[0].data() as ChecklistDetalle);
       }
+      console.log("🧾 Documento general:", generalSnap.exists(), generalSnap.data());
+console.log("📋 Documento detalle:", detalleSnap.empty, detalleSnap.docs.map(d => d.data()));
+console.log("🔍 ID buscado:", id);
 
       setLoading(false);
     };
@@ -127,16 +132,37 @@ export default function PageContent() {
   // ✅ Aprobar / Rechazar
   const handleActualizar = async (nuevoEstado: "aprobado" | "rechazado") => {
     if (!formulario) return;
-
-    const ref = doc(db, "checklist_pendientes", formulario.id);
+  
+    const refPendiente = doc(db, "checklist_pendientes", formulario.id);
+  
     const data = {
       ...formulario,
       estado: nuevoEstado,
       aprobado_por: adminNombre || "Desconocido",
     };
-
-    await addDoc(collection(db, "checklist_atendidos"), data);
-    await deleteDoc(ref);
+  
+    // ✅ Guardar el formulario en atendidos manteniendo el mismo ID
+    await setDoc(doc(db, "checklist_atendidos", formulario.id), data);
+  
+    // ✅ Buscar y copiar el detalle
+    const q = query(
+      collection(db, "checklist_detalle"),
+      where("id_formulario", "==", formulario.id)
+    );
+    const detalleSnap = await getDocs(q);
+  
+    if (!detalleSnap.empty) {
+      const originalDetalle = detalleSnap.docs[0].data();
+  
+      await addDoc(collection(db, "checklist_detalle"), {
+        ...originalDetalle,
+        id_formulario: formulario.id, // esto es clave
+      });
+    }
+  
+    // ✅ Eliminar de pendientes
+    await deleteDoc(refPendiente);
+  
     alert(`✅ Formulario ${nuevoEstado}`);
     window.location.href = "/admin/solicitudes/pendientes";
   };
