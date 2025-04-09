@@ -8,8 +8,10 @@ import {
   getDocs,
   doc,
   getDoc,
-  addDoc,
   deleteDoc,
+  where,
+  setDoc,
+  query,
 } from "firebase/firestore";
 import Link from "next/link";
 import { usePagination } from "@/hooks/usePagination";
@@ -68,47 +70,49 @@ export default function PageContent() {
     };
     fetchFormularios();
   }, []);
-
-  const handleAprobar = async (id: string) => {
+  const handleActualizarEstado = async (
+    id: string,
+    nuevoEstado: "aprobado" | "rechazado"
+  ) => {
     try {
       const refPendiente = doc(db, "checklist_pendientes", id);
       const snapshot = await getDoc(refPendiente);
       if (!snapshot.exists()) return alert("❌ El formulario no existe.");
+  
       const data = snapshot.data();
-
-      await addDoc(collection(db, "checklist_atendidos"), {
+  
+      // ✅ Guardar en checklist_atendidos con el mismo ID
+      await setDoc(doc(db, "checklist_atendidos", id), {
         ...data,
-        estado: "aprobado",
+        estado: nuevoEstado,
         aprobado_por: adminNombre || "Desconocido",
       });
+  
+      // ✅ Verificar si ya existe detalle
+      const q = query(
+        collection(db, "checklist_detalle"),
+        where("id_formulario", "==", id)
+      );
+      const detalleSnap = await getDocs(q);
+      if (detalleSnap.empty) {
+        console.warn("⚠️ No hay detalle para este formulario.");
+      } else {
+        console.log("✅ Detalle ya creado, no se duplica.");
+      }
+  
+      // ✅ Eliminar de pendientes
       await deleteDoc(refPendiente);
       setFormularios((prev) => prev.filter((f) => f.id !== id));
+      alert(`✅ Formulario ${nuevoEstado}`);
     } catch (err) {
-      console.error("❌ Error al aprobar:", err);
-      alert("❌ No se pudo aprobar el formulario.");
+      console.error(`❌ Error al actualizar (${nuevoEstado}):`, err);
+      alert("❌ No se pudo actualizar el estado del formulario.");
     }
   };
-
-  const handleRechazar = async (id: string) => {
-    try {
-      const refPendiente = doc(db, "checklist_pendientes", id);
-      const snapshot = await getDoc(refPendiente);
-      if (!snapshot.exists()) return alert("❌ El formulario no existe.");
-      const data = snapshot.data();
-
-      await addDoc(collection(db, "checklist_atendidos"), {
-        ...data,
-        estado: "rechazado",
-        aprobado_por: adminNombre || "Desconocido",
-      });
-      await deleteDoc(refPendiente);
-      setFormularios((prev) => prev.filter((f) => f.id !== id));
-    } catch (err) {
-      console.error("❌ Error al rechazar:", err);
-      alert("❌ No se pudo rechazar el formulario.");
-    }
-  };
-
+  
+  const handleAprobar = (id: string) => handleActualizarEstado(id, "aprobado");
+  const handleRechazar = (id: string) => handleActualizarEstado(id, "rechazado");
+  
   const limpiarFiltros = () => {
     setBusqueda("");
     setFechaDesde("");

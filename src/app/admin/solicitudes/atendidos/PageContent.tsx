@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { db } from "@/firebase";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, query, where } from "firebase/firestore";
 import Link from "next/link";
 import jsPDF from "jspdf";
 import autoTable, { RowInput } from "jspdf-autotable";
@@ -88,6 +88,7 @@ export default function PageContent() {
   const [fechaHasta, setFechaHasta] = useState("");
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
+
   useEffect(() => {
     const fetchFormularios = async () => {
       const snapshot = await getDocs(collection(db, "checklist_atendidos"));
@@ -102,8 +103,23 @@ export default function PageContent() {
     fetchFormularios();
   }, []);
 
- 
   const handleDownloadPDF = async (form: Formulario) => {
+     // 🧠 Si el checklist no viene embebido, lo traemos desde checklist_detalle
+  if (!form.checklist || Object.keys(form.checklist).length === 0) {
+    const q = query(
+      collection(db, "checklist_detalle"),
+      where("id_formulario", "==", form.id)
+    );
+    const detalleSnap = await getDocs(q);
+
+    if (!detalleSnap.empty) {
+      const data = detalleSnap.docs[0].data();
+      form.checklist = data.checklist;
+    } else {
+      alert("❌ No se encontró el detalle del checklist para este formulario.");
+      return;
+    }
+  }
     const doc = new jsPDF("p", "mm", "a4") as jsPDFWithAutoTable;
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
@@ -370,6 +386,7 @@ if (firmaImg) {
   
   
   
+ 
   
 
   const limpiarFiltros = () => {

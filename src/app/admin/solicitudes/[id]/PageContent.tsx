@@ -11,7 +11,7 @@ import {
   where,
   getDocs,
   deleteDoc,
-  addDoc,
+ 
   setDoc,
 } from "firebase/firestore";
 import Image from "next/image";
@@ -144,23 +144,20 @@ console.log("🔍 ID buscado:", id);
     // ✅ Guardar el formulario en atendidos manteniendo el mismo ID
     await setDoc(doc(db, "checklist_atendidos", formulario.id), data);
   
-    // ✅ Buscar y copiar el detalle
+    // ✅ Verificar si el detalle ya existe para evitar duplicados
     const q = query(
       collection(db, "checklist_detalle"),
       where("id_formulario", "==", formulario.id)
     );
     const detalleSnap = await getDocs(q);
   
-    if (!detalleSnap.empty) {
-      const originalDetalle = detalleSnap.docs[0].data();
-  
-      await addDoc(collection(db, "checklist_detalle"), {
-        ...originalDetalle,
-        id_formulario: formulario.id, // esto es clave
-      });
+    if (detalleSnap.empty) {
+      console.warn("⚠️ No se encontró detalle para este formulario. No se copia.");
+    } else {
+      console.log("✅ Detalle ya existente, no se duplica.");
     }
   
-    // ✅ Eliminar de pendientes
+    // ✅ Eliminar el formulario de pendientes
     await deleteDoc(refPendiente);
   
     alert(`✅ Formulario ${nuevoEstado}`);
