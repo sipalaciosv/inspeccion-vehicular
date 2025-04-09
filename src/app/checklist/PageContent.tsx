@@ -142,12 +142,10 @@ export default function PageContent() {
   /** ✅ Función para manejar el envío del formulario a Firebase */
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-  
     if (isSubmitting) return;
     setIsSubmitting(true);
   
     try {
-      // ✅ Validar que se completaron todos los ítems del checklist
       const totalEsperado = Object.values(secciones).flat().length;
       const totalCompletado = Object.keys(form.checklist).length;
       const opcionesValidas = ["B", "M", "NA"];
@@ -167,18 +165,12 @@ export default function PageContent() {
         return;
       }
   
-      // ✅ Subir imágenes del checklist
       const uploadedImages: { [key: string]: string } = {};
       for (const item in imagenes) {
         if (imagenes[item]) {
-          const imagenOriginal = imagenes[item]!;
-          console.log(`📸 Imagen "${item}" original:`, imagenOriginal.size, "bytes");
-  
-          const imagenComprimida = await comprimirImagen(imagenOriginal);
-          console.log(`📉 Imagen "${item}" comprimida:`, imagenComprimida.size, "bytes");
-  
+          const comprimida = await comprimirImagen(imagenes[item]!);
           const formData = new FormData();
-          formData.append("file", imagenComprimida);
+          formData.append("file", comprimida);
           formData.append("upload_preset", process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!);
   
           const response = await axios.post(
@@ -189,54 +181,60 @@ export default function PageContent() {
         }
       }
   
-      // ✅ Procesar imagen del dibujo (con o sin rayones)
+      // Subir dibujo de daños
       if (imagenDibujo) {
-        const dibujoBlob = await fetch(imagenDibujo).then(res => res.blob());
-        const dibujoComprimido = await comprimirImagen(dibujoBlob);
-        console.log("🚌 Dibujo original:", dibujoBlob.size, "bytes");
-        console.log("📉 Dibujo comprimido:", dibujoComprimido.size, "bytes");
-  
-        const dibujoForm = new FormData();
-        dibujoForm.append("file", dibujoComprimido);
-        dibujoForm.append("upload_preset", process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!);
-  
-        const dibujoRes = await axios.post(
+        const blob = await fetch(imagenDibujo).then(res => res.blob());
+        const comprimida = await comprimirImagen(blob);
+        const formData = new FormData();
+        formData.append("file", comprimida);
+        formData.append("upload_preset", process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!);
+        const res = await axios.post(
           `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
-          dibujoForm
+          formData
         );
-  
-        uploadedImages["danios_img"] = dibujoRes.data.secure_url;
+        uploadedImages["danios_img"] = res.data.secure_url;
       }
   
-      // ✅ Subir firma
+      // Subir firma
       const firmaBlob = await fetch(firmaImg).then(res => res.blob());
       const firmaComprimida = await comprimirImagen(firmaBlob);
-      console.log("✍️ Firma original:", firmaBlob.size, "bytes");
-      console.log("📉 Firma comprimida:", firmaComprimida.size, "bytes");
-  
       const firmaForm = new FormData();
       firmaForm.append("file", firmaComprimida);
       firmaForm.append("upload_preset", process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!);
-  
       const firmaRes = await axios.post(
         `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
         firmaForm
       );
       uploadedImages["firma_img"] = firmaRes.data.secure_url;
   
-      // ✅ Guardar formulario en Firestore
-      const itemsCriticos: string[] = []; // define tus ítems críticos aquí si corresponde
+      // Verifica si hay ítems críticos en "M"
+      const itemsCriticos: string[] = []; // ← rellena si quieres validar ítems específicos
       const hayCriticoMalo = itemsCriticos.some(item => form.checklist[item] === "M");
       const idCorrelativo = await obtenerIdCorrelativo("checklist");
+      const hallazgos = Object.values(form.checklist).filter(val => val === "M").length;
+
       
-      await addDoc(collection(db, "formularios"), {
-        ...form,
-        id_correlativo: idCorrelativo,
-        checklist: { ...form.checklist, ...uploadedImages },
-        fecha_creacion: new Date(),
-        estado: hayCriticoMalo ? "rechazado" : "pendiente",
-        aprobado_por: hayCriticoMalo ? "Autorechazo" : null,
+      // 1️⃣ Guardar datos generales
+      const generalRef = await addDoc(collection(db, hayCriticoMalo ? "checklist_atendidos" : "checklist_pendientes"), {
+        fecha_inspeccion: form.fecha_inspeccion,
+        hora_inspeccion: form.hora_inspeccion,
+        conductor: form.conductor,
+        numero_interno: form.numero_interno,
+        kilometraje: form.kilometraje,
+        vehiculo: form.vehiculo,
+        observaciones: form.observaciones,
         creado_por: controladorNombre || "Desconocido",
+        aprobado_por: hayCriticoMalo ? "Autorechazo" : null,
+        estado: hayCriticoMalo ? "rechazado" : "pendiente",
+        fecha_creacion: new Date(),
+        id_correlativo: idCorrelativo,
+        hallazgos,
+      });
+  
+      // 2️⃣ Guardar detalle (checklist completo con imágenes y firma)
+      await addDoc(collection(db, "checklist_detalle"), {
+        id_formulario: generalRef.id,
+        checklist: { ...form.checklist, ...uploadedImages },
       });
   
       alert(
@@ -245,7 +243,7 @@ export default function PageContent() {
           : "✅ Formulario enviado exitosamente"
       );
   
-      // ✅ Limpiar el formulario
+      // Limpiar formulario
       setForm({
         fecha_inspeccion: "",
         hora_inspeccion: "",
@@ -259,8 +257,8 @@ export default function PageContent() {
       setImagenDibujo(null);
       setImagenes({});
       setFirmaImg(null);
-      setFirmaKey(prev => prev + 1); // reiniciar canvas de firma
-      setDibujoKey(prev => prev + 1); // 🔄 reinicia canvas
+      setFirmaKey(prev => prev + 1);
+      setDibujoKey(prev => prev + 1);
     } catch (error) {
       console.error("❌ Error al enviar el formulario:", error);
       alert("❌ Error al enviar el formulario");

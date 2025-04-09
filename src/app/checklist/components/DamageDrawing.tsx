@@ -3,6 +3,8 @@ import type { CanvasPath } from "react-sketch-canvas";
 import { useRef, useState, useEffect } from "react";
 import { ReactSketchCanvas, ReactSketchCanvasRef } from "react-sketch-canvas";
 import { Modal, Button, Form } from "react-bootstrap";
+import Image from "next/image";
+
 
 interface DamageDrawingProps {
   onSave: (dataUrl: string) => void;
@@ -20,8 +22,9 @@ export default function DamageDrawing({ onSave, resetKey, clearPreview = false }
   useEffect(() => {
     if (canvasRef.current) {
       canvasRef.current.clearCanvas();
-      setPaths(null);
+      
     }
+    setPaths(null);
   }, [resetKey]);
 
   useEffect(() => {
@@ -30,7 +33,7 @@ export default function DamageDrawing({ onSave, resetKey, clearPreview = false }
 
   useEffect(() => {
     const cargarPaths = async () => {
-      if (show && paths && canvasRef.current) {
+      if (show && paths && paths.length > 0 && canvasRef.current) {
         await canvasRef.current.clearCanvas();
         await canvasRef.current.loadPaths(paths);
       }
@@ -44,7 +47,8 @@ export default function DamageDrawing({ onSave, resetKey, clearPreview = false }
 
     const sketchDataUrl = await canvas.exportImage("png");
 
-    const baseImage = new Image();
+    const baseImage = new window.Image();
+
     baseImage.src = "/bus1.jpg";
 
     baseImage.onload = async () => {
@@ -59,7 +63,8 @@ export default function DamageDrawing({ onSave, resetKey, clearPreview = false }
 
       ctx.drawImage(baseImage, 0, 0, width, height);
 
-      const overlayImage = new Image();
+      const overlayImage = new window.Image();
+
       overlayImage.src = sketchDataUrl;
       overlayImage.onload = async () => {
         ctx.drawImage(overlayImage, 0, 0, width, height);
@@ -84,15 +89,16 @@ export default function DamageDrawing({ onSave, resetKey, clearPreview = false }
       {previewUrl && (
         <div className="mt-3">
           <p className="mb-1"><strong>Vista previa del dibujo guardado:</strong></p>
-          <img
-            src={previewUrl}
-            alt="Vista previa"
-            style={{
-              maxWidth: "200px",
-              border: "1px solid #ccc",
-              borderRadius: "8px"
-            }}
-          />
+          <div style={{ maxWidth: "200px", border: "1px solid #ccc", borderRadius: "8px", overflow: "hidden" }}>
+  <Image
+    src={previewUrl}
+    alt="Vista previa"
+    width={200}
+    height={200}
+    style={{ objectFit: "contain", borderRadius: "8px" }}
+  />
+</div>
+
         </div>
       )}
 
@@ -123,11 +129,15 @@ export default function DamageDrawing({ onSave, resetKey, clearPreview = false }
           </div>
 
           <div style={{ position: "relative", width: "100%", height: "auto" }}>
-            <img
-              src="/bus1.jpg"
-              alt="Bus"
-              style={{ width: "100%", display: "block", border: "1px solid #ccc" }}
-            />
+          <Image
+  src="/bus1.jpg"
+  alt="Bus"
+  layout="responsive"
+  width={1000}
+  height={500}
+  style={{ border: "1px solid #ccc" }}
+/>
+
             <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}>
               <ReactSketchCanvas
                 ref={canvasRef}

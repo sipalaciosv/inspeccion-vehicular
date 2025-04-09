@@ -1,11 +1,23 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useParams, useSearchParams } from "next/navigation";
 import { db } from "@/firebase";
-import { doc, getDoc } from "firebase/firestore";
-import { useParams } from "next/navigation";
+import {
+  doc,
+  getDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+  deleteDoc,
+ 
+  setDoc,
+} from "firebase/firestore";
 import Image from "next/image";
 import Link from "next/link";
+import { auth } from "@/firebase";
+
 
 const secciones: { [key: string]: string[] } = {
   "Sistema de Luces": [
@@ -38,16 +50,21 @@ const secciones: { [key: string]: string[] } = {
   ],
 };
 
-interface Formulario {
+interface ChecklistDetalle {
+  checklist: { [key: string]: string };
+}
+
+interface FormularioGeneral {
   id: string;
-  conductor: string;
-  numero_interno: string;
   fecha_inspeccion: string;
   hora_inspeccion: string;
-  checklist: { [key: string]: string };
+  conductor: string;
+  numero_interno: string;
+  kilometraje: string;
   observaciones: string;
-  estado: "pendiente" | "aprobado" | "rechazado";
   creado_por?: string;
+  aprobado_por?: string;
+  estado: "pendiente" | "aprobado" | "rechazado";
   vehiculo: {
     marca: string;
     modelo: string;
@@ -55,199 +72,283 @@ interface Formulario {
     ano: string;
     color: string;
   };
-  kilometraje: string;
-  danios_img?: string;
 }
 
 export default function PageContent() {
   const { id } = useParams();
-  const [formulario, setFormulario] = useState<Formulario | null>(null);
+  const tipo = useSearchParams().get("from") || "pendientes";
+  const [formulario, setFormulario] = useState<FormularioGeneral | null>(null);
+  const [detalle, setDetalle] = useState<ChecklistDetalle | null>(null);
   const [loading, setLoading] = useState(true);
-  const [mostrarModal, setMostrarModal] = useState(false);
   const [imagenModal, setImagenModal] = useState<string | null>(null);
+  const [adminNombre, setAdminNombre] = useState<string>("");
+
+  // ✅ Obtener nombre del admin
+  useEffect(() => {
+    const fetchAdmin = async () => {
+      const user = auth.currentUser;
+      if (user) {
+        const snap = await getDoc(doc(db, "usuarios", user.uid));
+        if (snap.exists()) {
+          setAdminNombre(snap.data().nombre);
+        }
+        
+      }
+    };
+    fetchAdmin();
+  }, []);
 
   useEffect(() => {
-    const fetchFormulario = async () => {
+    const fetchData = async () => {
       if (!id) return;
-      const docRef = doc(db, "formularios", id as string);
-      const snapshot = await getDoc(docRef);
 
-      if (snapshot.exists()) {
-        setFormulario({ id: snapshot.id, ...snapshot.data() } as Formulario);
-      } else {
-        setFormulario(null);
+      const ref = doc(
+        db,
+        tipo === "atendidos" ? "checklist_atendidos" : "checklist_pendientes",
+        id as string
+      );
+      const generalSnap = await getDoc(ref);
+
+      const q = query(
+        collection(db, "checklist_detalle"),
+        where("id_formulario", "==", id)
+      );
+      const detalleSnap = await getDocs(q);
+
+      if (generalSnap.exists() && !detalleSnap.empty) {
+        setFormulario({ id: generalSnap.id, ...generalSnap.data() } as FormularioGeneral);
+        setDetalle(detalleSnap.docs[0].data() as ChecklistDetalle);
       }
+      console.log("🧾 Documento general:", generalSnap.exists(), generalSnap.data());
+console.log("📋 Documento detalle:", detalleSnap.empty, detalleSnap.docs.map(d => d.data()));
+console.log("🔍 ID buscado:", id);
+
       setLoading(false);
     };
 
-    fetchFormulario();
-  }, [id]);
+    fetchData();
+  }, [id, tipo]);
+
+  // ✅ Aprobar / Rechazar
+  const handleActualizar = async (nuevoEstado: "aprobado" | "rechazado") => {
+    if (!formulario) return;
+  
+    const refPendiente = doc(db, "checklist_pendientes", formulario.id);
+  
+    const data = {
+      ...formulario,
+      estado: nuevoEstado,
+      aprobado_por: adminNombre || "Desconocido",
+    };
+  
+    // ✅ Guardar el formulario en atendidos manteniendo el mismo ID
+    await setDoc(doc(db, "checklist_atendidos", formulario.id), data);
+  
+    // ✅ Verificar si el detalle ya existe para evitar duplicados
+    const q = query(
+      collection(db, "checklist_detalle"),
+      where("id_formulario", "==", formulario.id)
+    );
+    const detalleSnap = await getDocs(q);
+  
+    if (detalleSnap.empty) {
+      console.warn("⚠️ No se encontró detalle para este formulario. No se copia.");
+    } else {
+      console.log("✅ Detalle ya existente, no se duplica.");
+    }
+  
+    // ✅ Eliminar el formulario de pendientes
+    await deleteDoc(refPendiente);
+  
+    alert(`✅ Formulario ${nuevoEstado}`);
+    window.location.href = "/admin/solicitudes/pendientes";
+  };
 
   if (loading) return <div className="text-center mt-5">🔄 Cargando...</div>;
-  if (!formulario) return <div className="text-center mt-5 text-danger">❌ Formulario no encontrado</div>;
-  
-  
+  if (!formulario || !detalle) return <div className="text-danger text-center mt-5">❌ Formulario no encontrado</div>;
+
   return (
     <div className="container py-4">
-    <div className="card">
-      <div className="card-header bg-dark text-white text-center">
-        🧾 Detalles de la Inspección
-      </div>
-      <div className="card-body">
-        
-        {/* Información General + Vehículo en 2 columnas */}
-        <div className="row mb-3">
-          <div className="col-md-6">
-            <div className="card h-100">
-              <div className="card-header bg-secondary text-white">Información General</div>
+      {/* ✅ PANEL FLOTANTE si es pendiente */}
+      {formulario.estado === "pendiente" && (
+        <div
+          className="position-fixed bottom-0 end-0 m-4 bg-white border p-3 shadow rounded"
+          style={{ zIndex: 1000 }}
+        >
+          <p className="fw-bold mb-2 text-center">📋 Acciones</p>
+          <button
+            className="btn btn-success me-2 w-100 mb-2"
+            onClick={() => handleActualizar("aprobado")}
+          >
+            ✅ Aprobar
+          </button>
+          <button
+            className="btn btn-danger w-100"
+            onClick={() => handleActualizar("rechazado")}
+          >
+            ❌ Rechazar
+          </button>
+        </div>
+      )}
+
+      <div className="card">
+              <div className="card-header bg-dark text-white text-center">
+                🧾 Detalles de la Inspección
+              </div>
               <div className="card-body">
-                <p><strong>Conductor:</strong> {formulario.conductor}</p>
-                <p><strong>Realizado por:</strong> {formulario.creado_por || "Desconocido"}</p>
-                <p><strong>N° Vehículo:</strong> {formulario.numero_interno}</p>
-                <p><strong>Fecha:</strong> {formulario.fecha_inspeccion}</p>
-                <p><strong>Hora:</strong> {formulario.hora_inspeccion}</p>
-                <p><strong>Estado:</strong>{" "}
-                  <span className={`badge bg-${formulario.estado === "aprobado" ? "success" : formulario.estado === "rechazado" ? "danger" : "warning"}`}>
-                    {formulario.estado}
-                  </span>
-                </p>
-                <p><strong>Kilometraje:</strong> {formulario.kilometraje}</p>
+                {/* 🧑 General + Vehículo */}
+                <div className="row mb-3">
+                  <div className="col-md-6">
+                    <div className="card h-100">
+                      <div className="card-header bg-secondary text-white">Información General</div>
+                      <div className="card-body">
+                        <p><strong>Conductor:</strong> {formulario.conductor}</p>
+                        <p><strong>Realizado por:</strong> {formulario.creado_por || "Desconocido"}</p>
+                        <p><strong>N° Vehículo:</strong> {formulario.numero_interno}</p>
+                        <p><strong>Fecha:</strong> {formulario.fecha_inspeccion}</p>
+                        <p><strong>Hora:</strong> {formulario.hora_inspeccion}</p>
+                        <p><strong>Estado:</strong>{" "}
+                          <span className={`badge bg-${formulario.estado === "aprobado" ? "success" : formulario.estado === "rechazado" ? "danger" : "warning"}`}>
+                            {formulario.estado}
+                          </span>
+                        </p>
+                        <p><strong>Kilometraje:</strong> {formulario.kilometraje}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="col-md-6">
+                    <div className="card h-100">
+                      <div className="card-header bg-info text-white">Datos del Vehículo</div>
+                      <div className="card-body">
+                        <p><strong>Marca:</strong> {formulario.vehiculo.marca}</p>
+                        <p><strong>Modelo:</strong> {formulario.vehiculo.modelo}</p>
+                        <p><strong>Patente:</strong> {formulario.vehiculo.patente}</p>
+                        <p><strong>Año:</strong> {formulario.vehiculo.ano}</p>
+                        <p><strong>Color:</strong> {formulario.vehiculo.color}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+      
+                {/* 📝 Observaciones */}
+                <div className="card mb-3">
+                  <div className="card-header bg-primary text-white">Observaciones</div>
+                  <div className="card-body">
+                    <p>{formulario.observaciones || "Sin observaciones registradas."}</p>
+                  </div>
+                </div>
+      
+                {/* 🧼 Dibujo de Daños */}
+                {detalle.checklist["danios_img"] && (
+                  <div className="card mb-3">
+                    <div className="card-header bg-danger text-white">Dibujo de Daños</div>
+                    <div className="card-body text-center">
+                      <Image
+                        src={detalle.checklist["danios_img"]}
+                        alt="Dibujo de daños"
+                        width={600}
+                        height={400}
+                        className="img-thumbnail"
+                      />
+                    </div>
+                  </div>
+                )}
+      
+                {/* ✅ Checklist agrupado */}
+                {Object.entries(secciones).map(([seccion, items]) => (
+                  <div className="card mb-3" key={seccion}>
+                    <div className="card-header bg-dark text-white">{seccion}</div>
+                    <div className="card-body p-0">
+                      <table className="table table-striped mb-0">
+                        <thead>
+                          <tr>
+                            <th>Ítem</th>
+                            <th>Estado</th>
+                            <th>Imagen</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {items.map(item => (
+                            <tr key={item}>
+                              <td>{item}</td>
+                              <td>
+                                <span className={`badge bg-${detalle.checklist[item] === "B" ? "success" : detalle.checklist[item] === "M" ? "danger" : "secondary"}`}>
+                                  {detalle.checklist[item] || "NA"}
+                                </span>
+                              </td>
+                              <td>
+                                {detalle.checklist[`${item}_img`] ? (
+                                  <Image
+                                    src={detalle.checklist[`${item}_img`]}
+                                    alt={item}
+                                    width={100}
+                                    height={100}
+                                    className="img-thumbnail"
+                                    onClick={() => setImagenModal(detalle.checklist[`${item}_img`])}
+                                    style={{ cursor: "pointer" }}
+                                  />
+                                ) : (
+                                  "Sin imagen"
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ))}
+      
+                {/* ✍️ Firma */}
+                {detalle.checklist["firma_img"] && (
+                  <div className="card mb-3">
+                    <div className="card-header bg-success text-white">Firma del Conductor</div>
+                    <div className="card-body text-center">
+                      <Image
+                        src={detalle.checklist["firma_img"]}
+                        alt="Firma"
+                        width={300}
+                        height={150}
+                        className="img-thumbnail"
+                      />
+                    </div>
+                  </div>
+                )}
+
+      <div className="text-center mt-4">
+        <Link href={`/admin/solicitudes/${tipo}`} className="btn btn-secondary">
+          ⬅ Volver
+        </Link>
+      </div>
+
+      {/* ✅ Modal con <Image /> para evitar warning */}
+      {imagenModal && (
+        <div
+          className="modal fade show d-block"
+          style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
+          onClick={() => setImagenModal(null)}
+        >
+          <div className="modal-dialog modal-lg modal-dialog-centered" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Imagen Adjunta</h5>
+                <button type="button" className="btn-close" onClick={() => setImagenModal(null)} />
+              </div>
+              <div className="modal-body text-center">
+                <Image
+                  src={imagenModal}
+                  alt="Detalle"
+                  width={700}
+                  height={500}
+                  className="img-fluid"
+                />
               </div>
             </div>
           </div>
-  
-          <div className="col-md-6">
-            <div className="card h-100">
-              <div className="card-header bg-info text-white">Datos del Vehículo</div>
-              <div className="card-body">
-                <p><strong>Marca:</strong> {formulario.vehiculo.marca}</p>
-                <p><strong>Modelo:</strong> {formulario.vehiculo.modelo}</p>
-                <p><strong>Patente:</strong> {formulario.vehiculo.patente}</p>
-                <p><strong>Año:</strong> {formulario.vehiculo.ano}</p>
-                <p><strong>Color:</strong> {formulario.vehiculo.color}</p>
-              </div>
-            </div>
-          </div>
         </div>
-  
-        {/* Observaciones */}
-        <div className="card mb-3">
-          <div className="card-header bg-primary text-white">Observaciones</div>
-          <div className="card-body">
-            <p>{formulario.observaciones || "Sin observaciones registradas."}</p>
-          </div>
-        </div>
-  
-        {/* Dibujo de daños si existe */}
-        {formulario.checklist["danios_img"] && (
-          <div className="card mb-3">
-            <div className="card-header bg-danger text-white">Dibujo de Daños</div>
-            <div className="card-body text-center">
-              <Image src={formulario.checklist["danios_img"]} alt="Dibujo de daños" width={600} height={400} className="img-thumbnail" />
-            </div>
-          </div>
-        )}
-  
-        {/* Checklist agrupado */}
-        {Object.entries(secciones).map(([seccion, items]) => (
-          <div className="card mb-3" key={seccion}>
-            <div className="card-header bg-dark text-white">{seccion}</div>
-            <div className="card-body p-0">
-              <table className="table table-striped mb-0">
-                <thead>
-                  <tr>
-                    <th className="w-50">Ítem</th>
-                    <th className="w-25">Estado</th>
-                    <th className="w-25">Imagen</th>
-                  </tr>
-                </thead>
-                <tbody>
-  {items.map(item => {
-    const estado = formulario.checklist[item];
-    const img = formulario.checklist[`${item}_img`];
-
-    return (
-      <tr key={item}>
-        <td>{item}</td>
-        <td>
-          <span className={`badge bg-${estado === "B" ? "success" : estado === "M" ? "danger" : "secondary"}`}>
-            {estado || "NA"}
-          </span>
-        </td>
-        <td>
-          {img ? (
-            <img
-              src={img}
-              alt={`Imagen de ${item}`}
-              width={100}
-              height={100}
-              className="img-thumbnail"
-              style={{ cursor: "pointer" }}
-              onClick={() => {
-                setImagenModal(img);
-                setMostrarModal(true);
-              }}
-            />
-          ) : (
-            <>Sin imagen</>
-          )}
-        </td>
-      </tr>
-    );
-  })}
-</tbody>
-
-
-              </table>
-            </div>
-          </div>
-        ))}
-        {/* Firma del responsable */}
-{formulario.checklist["firma_img"] && (
-  <div className="card mb-3">
-    <div className="card-header bg-success text-white">Firma del Conductor</div>
-    <div className="card-body text-center">
-      <Image
-        src={formulario.checklist["firma_img"]}
-        alt="Firma del responsable"
-        width={300}
-        height={150}
-        className="img-thumbnail"
-      />
+      )}
     </div>
-  </div>
-)}
-
-        {/* Botón volver */}
-        <div className="text-center mt-4">
-          <Link href="/admin/solicitudes/pendientes" className="btn btn-secondary">⬅ Volver</Link>
-        </div>
-  
-      </div>
     </div>
-    {mostrarModal && imagenModal && (
-  <div
-    className="modal fade show d-block"
-    tabIndex={-1}
-    role="dialog"
-    style={{ backgroundColor: "rgba(0, 0, 0, 0.6)" }}
-    onClick={() => setMostrarModal(false)}
-  >
-    <div className="modal-dialog modal-lg modal-dialog-centered" role="document">
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h5 className="modal-title">Vista de imagen</h5>
-          <button type="button" className="btn-close" onClick={() => setMostrarModal(false)} />
-        </div>
-        <div className="modal-body text-center">
-          <img src={imagenModal} alt="Imagen grande" className="img-fluid" />
-        </div>
-      </div>
     </div>
-  </div>
-)}
-
-  </div>
-  
   );
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { db } from "@/firebase";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, query, where } from "firebase/firestore";
 import Link from "next/link";
 import jsPDF from "jspdf";
 import autoTable, { RowInput } from "jspdf-autotable";
@@ -67,6 +67,7 @@ interface Formulario {
   estado: "pendiente" | "aprobado" | "rechazado";
   aprobado_por?: string; // ✅ Agregado aquí
   creado_por?: string;
+  hallazgos: number; 
   danios_img?: string; 
   firma_img?: string;
   vehiculo: {
@@ -85,10 +86,13 @@ export default function PageContent() {
   const [busqueda, setBusqueda] = useState("");
   const [fechaDesde, setFechaDesde] = useState("");
   const [fechaHasta, setFechaHasta] = useState("");
-  const ITEMS_PER_PAGE = 10;
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+
   useEffect(() => {
     const fetchFormularios = async () => {
-      const snapshot = await getDocs(collection(db, "formularios"));
+      const snapshot = await getDocs(collection(db, "checklist_atendidos"));
+
       const data = snapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() } as Formulario))
         .filter(f => f.estado !== "pendiente")
@@ -99,9 +103,23 @@ export default function PageContent() {
     fetchFormularios();
   }, []);
 
-  const contarHallazgos = (checklist: { [key: string]: string }) =>
-    Object.values(checklist).filter(value => value === "M").length;
   const handleDownloadPDF = async (form: Formulario) => {
+     // 🧠 Si el checklist no viene embebido, lo traemos desde checklist_detalle
+  if (!form.checklist || Object.keys(form.checklist).length === 0) {
+    const q = query(
+      collection(db, "checklist_detalle"),
+      where("id_formulario", "==", form.id)
+    );
+    const detalleSnap = await getDocs(q);
+
+    if (!detalleSnap.empty) {
+      const data = detalleSnap.docs[0].data();
+      form.checklist = data.checklist;
+    } else {
+      alert("❌ No se encontró el detalle del checklist para este formulario.");
+      return;
+    }
+  }
     const doc = new jsPDF("p", "mm", "a4") as jsPDFWithAutoTable;
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
@@ -298,25 +316,57 @@ if (daniosImg) {
       }
     }
   
-    // ✍️ Firma
-  // ✍️ Firma
+// ✍️ Firma
 const firmaImg = form.checklist?.firma_img;
+const hayImagenesMalEstado = imagenesMalEstado.length > 0;
+
 if (firmaImg) {
-  if (y + 50 > pageHeight - 20) { addFooter(); doc.addPage(); y = 20; }
+  const firmaAlturaPequeña = 15; // más chica
+  const firmaAncho = 30;         // más angosta
+  const espacioRequerido = firmaAlturaPequeña + 16;
+  const espacioRestante = pageHeight - y - 20;
+  const centroX = pageWidth / 2;
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
-  doc.text("Firma del Conductor", 14, y);
-  y += 6;
+  const dibujarFirmaCentrada = () => {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.text(`Firma del conductor: ${form.conductor}`, centroX, y, { align: "center" });
 
-  try {
-    doc.addImage(firmaImg, "PNG", 14, y, 80, 40);
-    y += 45;
-  } catch {
-    doc.text("⚠️ No se pudo cargar la firma.", 14, y + 10);
-    y += 20;
+    y += 5;
+
+    try {
+      // 🖋️ Dibujar firma primero
+      doc.addImage(firmaImg, "PNG", centroX - firmaAncho / 2, y, firmaAncho, firmaAlturaPequeña);
+
+      // ➖ Línea justo debajo de la firma
+      const lineaY = y + firmaAlturaPequeña + 2;
+      doc.setDrawColor(100);
+      doc.setLineWidth(0.5);
+      doc.line(centroX - 30, lineaY, centroX + 30, lineaY);
+
+      y += firmaAlturaPequeña + 8;
+    } catch {
+      doc.setFont("helvetica", "normal");
+      doc.text("⚠️ No se pudo cargar la firma.", 14, y + 10);
+      y += 20;
+    }
+  };
+
+  if (!hayImagenesMalEstado && espacioRestante >= espacioRequerido) {
+    // ✅ Cabe debajo del bus, centrado
+    dibujarFirmaCentrada();
+  } else {
+    // ➕ Otras condiciones: nueva página
+    if (y + espacioRequerido > pageHeight - 20) {
+      addFooter();
+      doc.addPage();
+      y = 20;
+    }
+    dibujarFirmaCentrada();
   }
 }
+
+
 
   
     addFooter();
@@ -336,6 +386,7 @@ if (firmaImg) {
   
   
   
+ 
   
 
   const limpiarFiltros = () => {
@@ -370,8 +421,13 @@ if (firmaImg) {
     handlePageChange,
   } = usePagination<Formulario>({
     items: filtrados,
-    itemsPerPage: ITEMS_PER_PAGE,
+    itemsPerPage: itemsPerPage,
   });
+  
+  useEffect(() => {
+    handlePageChange(1);
+  }, [itemsPerPage, handlePageChange]); // ✅ limpio y sin warning
+  
   return (
     <div className="container py-4">
       <h2 className="text-center">Formularios Checklist Atendidos ✅❌</h2>
@@ -392,6 +448,21 @@ if (firmaImg) {
         <div className="col-md-2 mb-2">
           <button className="btn btn-secondary w-100" onClick={limpiarFiltros}>Limpiar</button>
         </div>
+        <div className="col-md-2 mb-2">
+  <label className="form-label">Filas por página</label>
+  <select
+    className="form-select"
+    value={itemsPerPage}
+    onChange={(e) => setItemsPerPage(Number(e.target.value))}
+  >
+    <option value={5}>5</option>
+    <option value={10}>10</option>
+    <option value={20}>20</option>
+    <option value={50}>50</option>
+    <option value={100}>100</option>
+  </select>
+</div>
+
       </div>
 
       <div className="table-responsive">
@@ -419,7 +490,8 @@ if (firmaImg) {
                 <td>{f.numero_interno}</td>
                 <td>{f.fecha_inspeccion}</td>
                 <td>{f.hora_inspeccion}</td>
-                <td><span className="badge bg-warning">{contarHallazgos(f.checklist)}</span></td>
+                <td><span className="badge bg-warning">{f.hallazgos ?? 0}</span></td>
+
       <td>
         <span className={`badge bg-${f.estado === "aprobado" ? "success" : "danger"}`}>
           {f.estado}
@@ -427,7 +499,10 @@ if (firmaImg) {
       </td>
       <td>{f.aprobado_por || "Desconocido"}</td>
                 <td>
-                  <Link href={`/admin/solicitudes/${f.id}`} className="btn btn-primary btn-sm me-2">Ver Detalles</Link>
+                <Link href={`/admin/solicitudes/${f.id}?from=atendidos`} className="btn btn-primary btn-sm me-2">
+  Ver Detalles
+</Link>
+
                   {/* Puedes añadir botón de PDF aquí si lo deseas */}
                   <button
   className="btn btn-secondary btn-sm"

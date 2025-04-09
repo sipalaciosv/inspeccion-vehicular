@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback  } from "react";
 
 interface UsePaginationProps<T> {
   items: T[];
@@ -21,11 +21,11 @@ export function usePagination<T>({ items, itemsPerPage }: UsePaginationProps<T>)
     return items.slice(startIndex, startIndex + itemsPerPage);
   }, [items, currentPage, itemsPerPage]);
 
-  const handlePageChange = (page: number) => {
+  const handlePageChange = useCallback((page: number) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
     }
-  };
+  }, [totalPages]);
 
   return { currentPage, totalPages, paginatedItems, handlePageChange };
 }
