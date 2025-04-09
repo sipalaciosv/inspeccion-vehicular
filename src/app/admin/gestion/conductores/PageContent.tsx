@@ -2,19 +2,31 @@
 
 import { useEffect, useState } from "react";
 import { db } from "@/firebase";
-import { collection, getDocs, addDoc, updateDoc, doc } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+} from "firebase/firestore";
 
 export default function PageContent() {
   interface Conductor {
     id: string;
     nombre: string;
   }
-  
+
   const [nombre, setNombre] = useState("");
   const [conductores, setConductores] = useState<Conductor[]>([]);
-
-  const [conductorEdit, setConductorEdit] = useState<{ id: string; nombre: string } | null>(null);
+  const [conductorEdit, setConductorEdit] = useState<Conductor | null>(null);
+  const [conductorEliminar, setConductorEliminar] = useState<Conductor | null>(null);
   const [toast, setToast] = useState("");
+
+  // 🔽 Filtros y paginación
+  const [busqueda, setBusqueda] = useState("");
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [paginaActual, setPaginaActual] = useState(1);
 
   useEffect(() => {
     cargarConductores();
@@ -26,9 +38,8 @@ export default function PageContent() {
       id: doc.id,
       nombre: doc.data().nombre || ""
     }));
-    setConductores(data); // ✅ actualizar el estado
+    setConductores(data);
   };
-  
 
   const agregarConductor = async () => {
     if (!nombre.trim()) return alert("⚠️ Ingrese un nombre");
@@ -46,6 +57,25 @@ export default function PageContent() {
     setTimeout(() => setToast(""), 3000);
   };
 
+  const eliminarConductor = async () => {
+    if (!conductorEliminar) return;
+    await deleteDoc(doc(db, "conductores", conductorEliminar.id));
+    setConductorEliminar(null);
+    cargarConductores();
+  };
+
+  // 🔍 Filtro
+  const filtrados = conductores.filter(c =>
+    c.nombre.toLowerCase().includes(busqueda.toLowerCase())
+  );
+
+  // 📄 Paginación
+  const totalPaginas = Math.ceil(filtrados.length / itemsPerPage);
+  const datosPagina = filtrados.slice(
+    (paginaActual - 1) * itemsPerPage,
+    paginaActual * itemsPerPage
+  );
+
   return (
     <div className="container py-4">
       <h2 className="text-center">Gestión de Conductores 👨‍✈️</h2>
@@ -60,7 +90,38 @@ export default function PageContent() {
           value={nombre}
           onChange={(e) => setNombre(e.target.value)}
         />
-        <button className="btn btn-primary" onClick={agregarConductor}>Agregar Conductor</button>
+        <button className="btn btn-primary" onClick={agregarConductor}>
+          Agregar Conductor
+        </button>
+      </div>
+
+      {/* Filtros */}
+      <div className="row mb-3">
+        <div className="col-md-6">
+          <input
+            className="form-control"
+            placeholder="Buscar conductor por nombre"
+            value={busqueda}
+            onChange={(e) => {
+              setBusqueda(e.target.value);
+              setPaginaActual(1);
+            }}
+          />
+        </div>
+        <div className="col-md-3">
+          <select
+            className="form-select"
+            value={itemsPerPage}
+            onChange={(e) => {
+              setItemsPerPage(parseInt(e.target.value));
+              setPaginaActual(1);
+            }}
+          >
+            {[5, 10, 20, 50].map(n => (
+              <option key={n} value={n}>Ver {n} por página</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="card p-4">
@@ -73,24 +134,44 @@ export default function PageContent() {
             </tr>
           </thead>
           <tbody>
-            {conductores.map((c) => (
+            {datosPagina.map(c => (
               <tr key={c.id}>
                 <td>{c.nombre}</td>
                 <td>
-                  <button
-                    className="btn btn-warning btn-sm"
-                    onClick={() => setConductorEdit({ id: c.id, nombre: c.nombre })}
-                  >
-                    Modificar
-                  </button>
+                  <button className="btn btn-sm btn-warning me-2" onClick={() => setConductorEdit(c)}>Modificar</button>
+                  <button className="btn btn-sm btn-danger" onClick={() => setConductorEliminar(c)}>Eliminar</button>
                 </td>
               </tr>
             ))}
+            {datosPagina.length === 0 && (
+              <tr><td colSpan={2} className="text-center">No se encontraron resultados</td></tr>
+            )}
           </tbody>
         </table>
+
+        {/* Paginación */}
+        <div className="d-flex justify-content-between align-items-center">
+          <span>Página {paginaActual} de {totalPaginas}</span>
+          <div>
+            <button
+              className="btn btn-outline-secondary btn-sm me-2"
+              disabled={paginaActual === 1}
+              onClick={() => setPaginaActual(p => p - 1)}
+            >
+              Anterior
+            </button>
+            <button
+              className="btn btn-outline-secondary btn-sm"
+              disabled={paginaActual === totalPaginas}
+              onClick={() => setPaginaActual(p => p + 1)}
+            >
+              Siguiente
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* Modal de edición */}
+      {/* Modal Edición */}
       {conductorEdit && (
         <div className="modal show d-block" tabIndex={-1} style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
           <div className="modal-dialog">
@@ -109,6 +190,28 @@ export default function PageContent() {
               <div className="modal-footer">
                 <button className="btn btn-secondary" onClick={() => setConductorEdit(null)}>Cancelar</button>
                 <button className="btn btn-success" onClick={actualizarConductor}>Actualizar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Confirmación de Eliminación */}
+      {conductorEliminar && (
+        <div className="modal show d-block" tabIndex={-1} style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
+          <div className="modal-dialog">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title text-danger">¿Eliminar Conductor?</h5>
+                <button className="btn-close" onClick={() => setConductorEliminar(null)}></button>
+              </div>
+              <div className="modal-body">
+                <p>¿Estás seguro de eliminar a <strong>{conductorEliminar.nombre}</strong>?</p>
+                <p className="text-muted small">Esta acción no se puede deshacer.</p>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={() => setConductorEliminar(null)}>Cancelar</button>
+                <button className="btn btn-danger" onClick={eliminarConductor}>Eliminar</button>
               </div>
             </div>
           </div>

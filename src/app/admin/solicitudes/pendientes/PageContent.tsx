@@ -151,142 +151,150 @@ export default function PageContent() {
   if (loading) return null;
 
   return (
-    <div className="container py-4">
-      <h2 className="text-center">Formularios Checklist Pendientes 📋</h2>
-
-      {/* Filtros */}
-      <div className="row mb-3">
-        <div className="col-md-4 mb-2">
-          <input
-            className="form-control"
-            placeholder="Buscar por ID, conductor, N° interno"
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-          />
+    <div className="container py-4 modulo-checklist">
+      <div className="card shadow rounded-3">
+        {/* Título */}
+        <div className="card-header text-center bg-white">
+          <h4 className="mb-0">
+            Formularios Checklist Pendientes <span role="img" aria-label="lista">📋</span>
+          </h4>
         </div>
-        <div className="col-md-3 mb-2">
-          <label className="form-label">Desde</label>
-          <input
-            type="date"
-            className="form-control"
-            value={fechaDesde}
-            onChange={(e) => setFechaDesde(e.target.value)}
-          />
-        </div>
-        <div className="col-md-3 mb-2">
-          <label className="form-label">Hasta</label>
-          <input
-            type="date"
-            className="form-control"
-            value={fechaHasta}
-            onChange={(e) => setFechaHasta(e.target.value)}
-          />
-        </div>
-        <div className="col-md-2 mb-2">
-          <button className="btn btn-secondary w-100" onClick={limpiarFiltros}>
-            Limpiar
-          </button>
-        </div>
-      </div>
-
-      {/* Selector de filas */}
-      <div className="row mb-2">
-        <div className="col-md-3 ms-auto">
-          <select
-            className="form-select"
-            value={itemsPerPage}
-            onChange={(e) => setItemsPerPage(parseInt(e.target.value))}
-          >
-            {[5, 10, 20, 50].map((num) => (
-              <option key={num} value={num}>
-                Ver {num} por página
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* Tabla */}
-      <div className="table-responsive">
-        <table className="table table-striped">
-          <thead className="table-light">
-            <tr>
-              <th>ID</th>
-              <th>Conductor</th>
-              <th>Generado por</th>
-              <th>N° Vehículo</th>
-              <th>Fecha</th>
-              <th>Hora</th>
-              <th>No Conformidades</th>
-              <th>Estado</th>
-              {(role === "admin" || role === "controlador") && (
-                <th>Acciones</th>
-              )}
-              <th>Visualizar</th>
-            </tr>
-          </thead>
-          <tbody>
-            {paginatedItems.map((f) => (
-              <tr key={f.id}>
-                <td>{f.id_correlativo}</td>
-                <td>{f.conductor}</td>
-                <td>{f.creado_por || "Desconocido"}</td>
-                <td>{f.numero_interno}</td>
-                <td>{f.fecha_inspeccion}</td>
-                <td>{f.hora_inspeccion}</td>
-                <td>
-                  <span className="badge bg-warning">
-                    {f.hallazgos ?? 0}
-                  </span>
-                </td>
-                <td>
-                  <span className="badge bg-warning text-dark">
-                    {f.estado}
-                  </span>
-                </td>
-                {(role === "admin" || role === "controlador") && (
-                  <td>
-                    <button
-                      className="btn btn-success btn-sm me-2"
-                      onClick={() => handleAprobar(f.id)}
-                    >
-                      Aprobar
-                    </button>
-                    <button
-                      className="btn btn-danger btn-sm"
-                      onClick={() => handleRechazar(f.id)}
-                    >
-                      Rechazar
-                    </button>
-                  </td>
+  
+        <div className="card-body">
+          {/* Filtros por fecha */}
+          <div className="row mb-3">
+            <div className="col-md-5">
+              <label className="form-label">Desde</label>
+              <input
+                type="date"
+                className="form-control"
+                value={fechaDesde}
+                onChange={(e) => setFechaDesde(e.target.value)}
+              />
+            </div>
+            <div className="col-md-5">
+              <label className="form-label">Hasta</label>
+              <input
+                type="date"
+                className="form-control"
+                value={fechaHasta}
+                onChange={(e) => setFechaHasta(e.target.value)}
+              />
+            </div>
+            <div className="col-md-2 d-flex align-items-end">
+              <button className="btn btn-limpiar w-100" onClick={limpiarFiltros}>
+                Limpiar
+              </button>
+            </div>
+          </div>
+  
+          {/* Fila: Buscador y selector */}
+          <div className="row align-items-center mb-3">
+            <div className="col-md-6">
+              <input
+                className="form-control"
+                placeholder="Buscar por ID, conductor, N° interno"
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+              />
+            </div>
+            <div className="col-md-3 ms-auto">
+              <select
+                className="form-select"
+                value={itemsPerPage}
+                onChange={(e) => setItemsPerPage(parseInt(e.target.value))}
+              >
+                {[5, 10, 20, 50].map((num) => (
+                  <option key={num} value={num}>
+                    Ver {num} por página
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+  
+          {/* Tabla */}
+          <div className="table-responsive">
+            <table className="table table-striped align-middle">
+              <thead className="table-light">
+                <tr>
+                  <th>ID</th>
+                  <th>Conductor</th>
+                  <th>Generado por</th>
+                  <th>N° Vehículo</th>
+                  <th>Fecha</th>
+                  <th>Hora</th>
+                  <th>No Conformidades</th>
+                  <th>Estado</th>
+                  {(role === "admin" || role === "controlador") && <th>Acciones</th>}
+                  <th>Visualizar</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedItems.map((f) => (
+                  <tr key={f.id}>
+                    <td>{f.id_correlativo}</td>
+                    <td>{f.conductor}</td>
+                    <td>{f.creado_por || "Desconocido"}</td>
+                    <td>{f.numero_interno}</td>
+                    <td>{f.fecha_inspeccion}</td>
+                    <td>{f.hora_inspeccion}</td>
+                    <td>
+                      <span className="badge badge-pendiente">{f.hallazgos ?? 0}</span>
+                    </td>
+                    <td>
+                      <span className="badge badge-pendiente">{f.estado}</span>
+                    </td>
+                    {(role === "admin" || role === "controlador") && (
+                      <td>
+                        <button
+                          className="btn btn-success btn-sm me-2"
+                          onClick={() => handleAprobar(f.id)}
+                        >
+                          Aprobar
+                        </button>
+                        <button
+                          className="btn btn-danger btn-sm"
+                          onClick={() => handleRechazar(f.id)}
+                        >
+                          Rechazar
+                        </button>
+                      </td>
+                    )}
+                    <td>
+                      <Link
+                        href={`/admin/solicitudes/${f.id}`}
+                        className="btn btn-primary btn-sm"
+                      >
+                        Ver Detalles
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+                {paginatedItems.length === 0 && (
+                  <tr>
+                    <td colSpan={10} className="text-center">
+                      No hay resultados
+                    </td>
+                  </tr>
                 )}
-                <td>
-                  <Link
-                    href={`/admin/solicitudes/${f.id}`}
-                    className="btn btn-primary btn-sm"
-                  >
-                    Ver Detalles
-                  </Link>
-                </td>
-              </tr>
-            ))}
-            {paginatedItems.length === 0 && (
-              <tr>
-                <td colSpan={10} className="text-center">
-                  No hay resultados
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+              </tbody>
+            </table>
+          </div>
+  
+          {/* Paginación */}
+          <div className="mt-3 d-flex justify-content-center">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
+          </div>
+        </div>
       </div>
-
-      {/* Paginación */}
-      <Pagination
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={handlePageChange}
-      />
     </div>
   );
+  
+  
+  
 }
