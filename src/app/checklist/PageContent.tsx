@@ -99,6 +99,18 @@ export default function PageContent() {
   
     fetchControlador();
   }, []);
+  useEffect(() => {
+    const ahora = new Date();
+    const fecha = ahora.toISOString().split("T")[0]; // "yyyy-mm-dd"
+    const hora = ahora.toTimeString().slice(0, 5);    // "HH:MM"
+  
+    setForm(prev => ({
+      ...prev,
+      fecha_inspeccion: fecha,
+      hora_inspeccion: hora,
+    }));
+  }, []);
+  
   const [dibujoKey, setDibujoKey] = useState(0);
 
   const cargarDatosVehiculo = async (numeroInterno: string) => {
@@ -281,20 +293,26 @@ export default function PageContent() {
         <div className="card mb-4">
           <div className="card-header bg-secondary text-white">Información del Vehículo y Conductor</div>
           <div className="card-body row">
-            <div className="col-md-3 mb-3">
-              <label>Fecha de Inspección</label>
-              <input
-                required type="date" className="form-control" value={form.fecha_inspeccion} 
-                onChange={(e) => setForm({ ...form, fecha_inspeccion: e.target.value })}
-              />
-            </div>
-            <div className="col-md-3 mb-3">
-              <label>Hora de Inspección</label>
-              <input
-                required type="time" className="form-control" value={form.hora_inspeccion}
-                onChange={(e) => setForm({ ...form, hora_inspeccion: e.target.value })}
-              />
-            </div>
+          <div className="col-md-3 mb-3">
+  <label>Fecha de Inspección</label>
+  <input
+    type="date"
+    className="form-control"
+    value={form.fecha_inspeccion}
+    disabled
+  />
+</div>
+
+<div className="col-md-3 mb-3">
+  <label>Hora de Inspección</label>
+  <input
+    type="time"
+    className="form-control"
+    value={form.hora_inspeccion}
+    disabled
+  />
+</div>
+
             <div className="col-md-3 mb-3">
               <label>Conductor</label>
               <select
