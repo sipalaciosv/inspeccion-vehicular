@@ -6,6 +6,8 @@ import { db } from "@/firebase";
 import { getAuth } from "firebase/auth";
 import { getDoc } from "firebase/firestore";
 import FirmaCanvas from "@/components/FirmaCanvas";
+import useUserRole from "@/hooks/useUserRole";
+
 interface FormularioFatiga {
   conductor: string;
   tipo_vehiculo: string;
@@ -41,6 +43,7 @@ export default function PageContent() {
     respuestas: {},
     observaciones: {},
   });
+  const { role } = useUserRole();
 
   const [conductores, setConductores] = useState<string[]>([]);
   const [vehiculos, setVehiculos] = useState<string[]>([]);
@@ -58,7 +61,20 @@ export default function PageContent() {
     };
     fetchData();
   }, []);
-
+  useEffect(() => {
+    if (role !== "admin") {
+      const ahora = new Date();
+      const fecha = ahora.toISOString().split("T")[0]; // yyyy-mm-dd
+      const hora = ahora.toTimeString().slice(0, 5);    // HH:MM
+  
+      setForm(prev => ({
+        ...prev,
+        fecha,
+        hora_salida: hora,
+      }));
+    }
+  }, [role]);
+  
   const preguntas = [
     "¿Ha dormido lo suficiente para afirmar que se encuentra apto para cumplir sus funciones y sin cansancio?",
     "¿Se encuentra sin problemas de salud (física), para la correcta realización del trabajo?",
@@ -174,40 +190,95 @@ if (firmaImg) {
           <form onSubmit={handleSubmit}>
             {/* Datos del Conductor */}
             <div className="mb-4">
-              <h5>Datos del Conductor</h5>
+  <h5>Datos del Conductor</h5>
+  <div className="row">
+    <div className="col-md-6 mb-3">
+      <label>Conductor</label>
+      <select
+        className="form-control"
+        name="conductor"
+        value={form.conductor}
+        onChange={handleChange}
+        required
+      >
+        <option value="">Seleccione un Conductor</option>
+        {conductores.map((nombre) => (
+          <option key={nombre} value={nombre}>{nombre}</option>
+        ))}
+      </select>
+    </div>
 
-              <select className="form-control mb-2" name="conductor" value={form.conductor} onChange={handleChange} required>
-                <option value="">Seleccione un Conductor</option>
-                {conductores.map((nombre) => (
-                  <option key={nombre} value={nombre}>{nombre}</option>
-                ))}
-              </select>
+    <div className="col-md-6 mb-3">
+      <label>Tipo de Vehículo</label>
+      <input
+        className="form-control"
+        name="tipo_vehiculo"
+        value={form.tipo_vehiculo}
+        readOnly
+      />
+    </div>
 
-              <input
-                className="form-control mb-2"
-                name="tipo_vehiculo"
-                value={form.tipo_vehiculo}
-                readOnly
-              />
+    <div className="col-md-6 mb-3">
+      <label>Número Interno</label>
+      <select
+        className="form-control"
+        name="numero_interno"
+        value={form.numero_interno}
+        onChange={handleChange}
+        required
+      >
+        <option value="">Seleccione un Vehículo</option>
+        {vehiculos.map((num) => (
+          <option key={num} value={num}>{num}</option>
+        ))}
+      </select>
+    </div>
 
-              <select className="form-control mb-2" name="numero_interno" value={form.numero_interno} onChange={handleChange} required>
-                <option value="">Seleccione un Vehículo</option>
-                {vehiculos.map((num) => (
-                  <option key={num} value={num}>{num}</option>
-                ))}
-              </select>
+    <div className="col-md-6 mb-3">
+      <label>Destino</label>
+      <select
+        className="form-control"
+        name="destino"
+        value={form.destino}
+        onChange={handleChange}
+        required
+      >
+        <option value="">Seleccione Destino de Tránsito</option>
+        <option value="Iquique">Iquique</option>
+        <option value="Arica">Arica</option>
+        <option value="Antofagasta">Antofagasta</option>
+        <option value="Calama">Calama</option>
+      </select>
+    </div>
 
-              <select className="form-control mb-2" name="destino" value={form.destino} onChange={handleChange} required>
-                <option value="">Seleccione Destino de Tránsito</option>
-                <option value="Iquique">Iquique</option>
-                <option value="Arica">Arica</option>
-                <option value="Antofagasta">Antofagasta</option>
-                <option value="Calama">Calama</option>
-              </select>
+    <div className="col-md-6 mb-3">
+      <label>Hora de Salida</label>
+      <input
+        className="form-control"
+        type="time"
+        name="hora_salida"
+        value={form.hora_salida}
+        onChange={handleChange}
+        required
+        disabled={role !== "admin"}
+      />
+    </div>
 
-              <input className="form-control mb-2" type="time" name="hora_salida" value={form.hora_salida} onChange={handleChange} required />
-              <input className="form-control mb-2" type="date" name="fecha" value={form.fecha} onChange={handleChange} required />
-            </div>
+    <div className="col-md-6 mb-3">
+      <label>Fecha</label>
+      <input
+        className="form-control"
+        type="date"
+        name="fecha"
+        value={form.fecha}
+        onChange={handleChange}
+        required
+        disabled={role !== "admin"}
+      />
+    </div>
+  </div>
+</div>
+
 
             {/* Cuestionario */}
             <div className="mb-4">

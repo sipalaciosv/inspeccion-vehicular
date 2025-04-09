@@ -13,6 +13,7 @@ import { getDoc } from "firebase/firestore";
 import { secciones } from "@/constants/checklist";
 import FirmaCanvas from "@/components/FirmaCanvas";
 import imageCompression from "browser-image-compression";
+import useUserRole from "@/hooks/useUserRole";
 
 
 const obtenerIdCorrelativo = async (tipo: "checklist" | "fatiga") => {
@@ -69,6 +70,7 @@ export default function PageContent() {
   const [imagenes, setImagenes] = useState<{ [key: string]: File | null }>({});
 
   const [controladorNombre, setControladorNombre] = useState<string | null>(null);
+  const { role } = useUserRole();
 
   useEffect(() => {
     const cargarConductores = async () => {
@@ -299,7 +301,8 @@ export default function PageContent() {
     type="date"
     className="form-control"
     value={form.fecha_inspeccion}
-    disabled
+    onChange={(e) => setForm({ ...form, fecha_inspeccion: e.target.value })}
+    disabled={role !== "admin"}
   />
 </div>
 
@@ -309,7 +312,8 @@ export default function PageContent() {
     type="time"
     className="form-control"
     value={form.hora_inspeccion}
-    disabled
+    onChange={(e) => setForm({ ...form, hora_inspeccion: e.target.value })}
+    disabled={role !== "admin"}
   />
 </div>
 

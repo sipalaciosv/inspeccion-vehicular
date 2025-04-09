@@ -1,2 +1,56 @@
 @import "bootstrap/dist/css/bootstrap.min.css";
 
+/* ==== COLORES CORPORATIVOS ==== */
+:root {
+  --color-principal: #F26522;       /* Naranjo buses Tarapacá */
+  --color-secundario: #4A4A4A;      /* Gris oscuro */
+  --color-estado-pendiente: #f9c74f;
+  --color-badge-text: #000;
+}
+
+/* ==== ESTILOS DE MODULO CHECKLIST (aislados) ==== */
+
+.modulo-checklist .badge-pendiente {
+  background-color: var(--color-estado-pendiente);
+  color: var(--color-badge-text);
+}
+
+.modulo-checklist .card-header {
+  border-bottom: 3px solid var(--color-principal) !important;
+}
+.modulo-checklist-atendidos .card-header {
+  border-bottom: 3px solid var(--color-principal) !important;
+}
+
+.modulo-checklist-atendidos .badge-pendiente {
+  background-color: var(--color-estado-pendiente);
+  color: var(--color-badge-text);
+}
+.modulo-fatiga-atendidos .card-header {
+  border-bottom: 3px solid var(--color-principal) !important;
+}
+.modulo-fatiga-pendientes .card-header {
+  border-bottom: 3px solid var(--color-principal) !important;
+}
+
+.btn-limpiar {
+    background-color: var(--color-principal);
+    color: white;
+    border: none;
+  }
+  
+.btn-limpiar:hover {
+background-color: #d6531f;
+}
+
+/* ==== ESTILO GLOBAL DE PAGINACIÓN ==== */
+.pagination .page-item.active .page-link {
+  background-color: var(--color-principal);
+  border-color: var(--color-principal);
+  color: white;
+}
+
+/* Opcional: más suave para todos los botones de página */
+.pagination .page-link {
+  transition: background-color 0.2s ease;
+}
