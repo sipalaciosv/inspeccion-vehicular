@@ -64,8 +64,8 @@ export default function PageContent() {
   useEffect(() => {
     if (role !== "admin") {
       const ahora = new Date();
-      const fecha = ahora.toISOString().split("T")[0]; // yyyy-mm-dd
-      const hora = ahora.toTimeString().slice(0, 5);    // HH:MM
+      const fecha = ahora.toLocaleDateString("en-CA"); // ✅ "YYYY-MM-DD"
+      const hora = ahora.toTimeString().slice(0, 5);   // ✅ "HH:MM"
   
       setForm(prev => ({
         ...prev,
@@ -74,6 +74,7 @@ export default function PageContent() {
       }));
     }
   }, [role]);
+  
   
   const preguntas = [
     "¿Ha dormido lo suficiente para afirmar que se encuentra apto para cumplir sus funciones y sin cansancio?",

@@ -103,8 +103,12 @@ export default function PageContent() {
   }, []);
   useEffect(() => {
     const ahora = new Date();
-    const fecha = ahora.toISOString().split("T")[0]; // "yyyy-mm-dd"
-    const hora = ahora.toTimeString().slice(0, 5);    // "HH:MM"
+  
+    // ✅ Formatea fecha en horario local (YYYY-MM-DD)
+    const fecha = ahora.toLocaleDateString("en-CA"); // "2025-04-10"
+    
+    // ✅ Formatea hora como HH:MM (24h)
+    const hora = ahora.toTimeString().slice(0, 5); // "08:35"
   
     setForm(prev => ({
       ...prev,
@@ -112,6 +116,7 @@ export default function PageContent() {
       hora_inspeccion: hora,
     }));
   }, []);
+  
   
   const [dibujoKey, setDibujoKey] = useState(0);
 
