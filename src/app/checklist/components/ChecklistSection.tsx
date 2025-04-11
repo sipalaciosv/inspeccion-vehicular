@@ -4,6 +4,12 @@ interface ChecklistSectionProps {
   form: FormData;
   setForm: React.Dispatch<React.SetStateAction<FormData>>;
   setImages: React.Dispatch<React.SetStateAction<{ [key: string]: File | null }>>;
+  setItemPendienteDeObservacion: React.Dispatch<React.SetStateAction<string | null>>;
+  setMostrarModalObservacion: React.Dispatch<React.SetStateAction<boolean>>;
+  observacionesPorItem: Record<string, string>;
+  setObservacionesPorItem: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+
+
 }
 
 const secciones: { [key: string]: string[] } = {
@@ -37,7 +43,11 @@ const secciones: { [key: string]: string[] } = {
   ],
 };
 
-export default function ChecklistSection({ form, setForm, setImages }: ChecklistSectionProps) {
+export default function ChecklistSection({ form, setForm, setImages,
+  setItemPendienteDeObservacion,
+  setMostrarModalObservacion, 
+  observacionesPorItem,
+  setObservacionesPorItem,}: ChecklistSectionProps) {
   const opciones = ["B", "M", "NA"];
 
   const handleCheckboxChange = (item: string, opcion: string) => {
@@ -45,7 +55,21 @@ export default function ChecklistSection({ form, setForm, setImages }: Checklist
       ...prevForm,
       checklist: { ...prevForm.checklist, [item]: opcion },
     }));
+  
+    if (opcion === "M") {
+      setItemPendienteDeObservacion(item);
+      setMostrarModalObservacion(true);
+    } else {
+      // 🧹 Si elige B o NA, borramos la observación
+      setObservacionesPorItem(prev => {
+        const newObs = { ...prev };
+        delete newObs[item];
+        return newObs;
+      });
+    }
   };
+  
+  
 
   const handleFileChange = (item: string, file: File | null) => {
     setImages((prev: { [key: string]: File | null }) => ({
@@ -100,15 +124,34 @@ export default function ChecklistSection({ form, setForm, setImages }: Checklist
                       ))}
                     </div>
                     {form.checklist[item] === "M" && (
-                      <div>
-                        <label className="form-label">Adjuntar imagen:</label>
-                        <input
-                          type="file"
-                          className="form-control"
-                          onChange={(e) => handleFileChange(item, e.target.files?.[0] || null)}
-                        />
-                      </div>
-                    )}
+  <>
+    <div className="mb-2">
+      <label className="form-label">Adjuntar imagen:</label>
+      <input
+        type="file"
+        className="form-control"
+        onChange={(e) => handleFileChange(item, e.target.files?.[0] || null)}
+      />
+    </div>
+
+    {observacionesPorItem[item] && (
+      <div className="d-flex justify-content-between align-items-center alert alert-warning py-1 px-2">
+        <span><strong>Observación:</strong> {observacionesPorItem[item]}</span>
+        <button
+          type="button"
+          className="btn btn-sm btn-outline-secondary"
+          onClick={() => {
+            setItemPendienteDeObservacion(item);
+            setMostrarModalObservacion(true);
+          }}
+        >
+          ✏️ Editar
+        </button>
+      </div>
+    )}
+  </>
+)}
+
                   </div>
                 </div>
               ))}

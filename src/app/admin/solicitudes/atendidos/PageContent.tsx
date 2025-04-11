@@ -239,7 +239,44 @@ export default function PageContent() {
   
       y = (doc.lastAutoTable?.finalY ?? y) + 6;
     }
-  
+  // ✅ Tabla de observaciones por ítem (solo si existen)
+const observacionesItems = Object.entries(form.checklist)
+.filter(([k, v]) => k.endsWith("_obs") && v.trim().length > 0)
+.map(([k, v]) => [k.replace("_obs", ""), v]);
+
+if (observacionesItems.length > 0) {
+if (y + 30 > pageHeight - 20) { addFooter(); doc.addPage(); y = 20; }
+
+doc.setFont("helvetica", "bold");
+doc.setFontSize(11);
+doc.text("Observaciones de las No Conformidades", 14, y);
+y += 4;
+
+autoTable(doc, {
+  startY: y,
+  head: [["Ítem", "Observación"]],
+  body: observacionesItems,
+  styles: { fontSize: 9, cellPadding: 1.5 },
+  headStyles: {
+    fillColor: [255, 204, 0],
+    textColor: 0,
+    fontStyle: 'bold',
+    halign: 'center'
+  },
+  bodyStyles: {
+    halign: 'left',
+    valign: 'top'
+  },
+  columnStyles: {
+    0: { cellWidth: 60 },
+    1: { cellWidth: pageWidth - 60 - 28 }
+  },
+  margin: { left: 14, right: 14 }
+});
+
+y = (doc.lastAutoTable?.finalY ?? y) + 6;
+}
+
     // 🚌 Dibujo del bus
     // 🚌 Dibujo del bus
 const daniosImg = form.checklist?.danios_img;

@@ -54,10 +54,17 @@ export default function PageContent() {
   useEffect(() => {
     const fetchData = async () => {
       const snapshotConductores = await getDocs(collection(db, "conductores"));
-      setConductores(snapshotConductores.docs.map(doc => doc.data().nombre));
+      setConductores(snapshotConductores.docs.map(doc => doc.data().nombre).sort((a, b) => a.localeCompare(b)))
+      ;
 
       const snapshotVehiculos = await getDocs(collection(db, "vehiculos"));
-      setVehiculos(snapshotVehiculos.docs.map(doc => doc.data().numero_interno));
+const numerosOrdenados = snapshotVehiculos.docs
+  .map(doc => doc.data().numero_interno)
+  .filter(num => num !== undefined)
+  .sort((a, b) => Number(a) - Number(b)); // ← ordena numéricamente
+
+setVehiculos(numerosOrdenados);
+
     };
     fetchData();
   }, []);
