@@ -51,6 +51,10 @@ export interface FormData {
 }
 
 export default function PageContent() {
+  const [observacionesPorItem, setObservacionesPorItem] = useState<Record<string, string>>({});
+const [itemPendienteDeObservacion, setItemPendienteDeObservacion] = useState<string | null>(null);
+const [mostrarModalObservacion, setMostrarModalObservacion] = useState(false);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState<FormData>({
     fecha_inspeccion: "",
@@ -75,13 +79,22 @@ export default function PageContent() {
   useEffect(() => {
     const cargarConductores = async () => {
       const snapshot = await getDocs(collection(db, "conductores"));
-      setConductores(snapshot.docs.map(doc => doc.data().nombre));
+      setConductores(snapshot.docs
+        .map(doc => doc.data().nombre)
+        .sort((a, b) => a.localeCompare(b))
+      );
     };
 
     const cargarNumerosInternos = async () => {
       const snapshot = await getDocs(collection(db, "vehiculos"));
-      setNumerosInternos(snapshot.docs.map(doc => doc.data().numero_interno));
+      const numeros = snapshot.docs
+        .map(doc => doc.data().numero_interno)
+        .filter(num => num !== undefined) // por si acaso
+        .sort((a, b) => Number(a) - Number(b)); // 🔽 ordena numéricamente
+    
+      setNumerosInternos(numeros);
     };
+    
 
     cargarConductores();
     cargarNumerosInternos();
@@ -231,6 +244,16 @@ export default function PageContent() {
       const hayCriticoMalo = itemsCriticos.some(item => form.checklist[item] === "M");
       const idCorrelativo = await obtenerIdCorrelativo("checklist");
       const hallazgos = Object.values(form.checklist).filter(val => val === "M").length;
+      const itemsM = Object.entries(form.checklist).filter(([, val]) => val === "M");
+
+
+for (const [item] of itemsM) {
+  if (!observacionesPorItem[item]) {
+    alert(`⚠️ Faltan observaciones para el ítem marcado como "M": ${item}`);
+    setIsSubmitting(false);
+    return;
+  }
+}
 
       
       // 1️⃣ Guardar datos generales
@@ -249,11 +272,17 @@ export default function PageContent() {
         id_correlativo: idCorrelativo,
         hallazgos,
       });
-  
+      
       // 2️⃣ Guardar detalle (checklist completo con imágenes y firma)
       await addDoc(collection(db, "checklist_detalle"), {
         id_formulario: generalRef.id,
-        checklist: { ...form.checklist, ...uploadedImages },
+        checklist: {
+          ...form.checklist,
+          ...uploadedImages,
+          ...Object.fromEntries(
+            Object.entries(observacionesPorItem).map(([k, v]) => [`${k}_obs`, v])
+          )
+        },
       });
   
       alert(
@@ -278,6 +307,7 @@ export default function PageContent() {
       setFirmaImg(null);
       setFirmaKey(prev => prev + 1);
       setDibujoKey(prev => prev + 1);
+      setObservacionesPorItem({});
     } catch (error) {
       console.error("❌ Error al enviar el formulario:", error);
       alert("❌ Error al enviar el formulario");
@@ -369,7 +399,16 @@ export default function PageContent() {
         </div>
 
         {/* Sección de Checklist */}
-        <ChecklistSection form={form} setForm={setForm} setImages={setImagenes} />
+        <ChecklistSection
+  form={form}
+  setForm={setForm}
+  setImages={setImagenes}
+  setItemPendienteDeObservacion={setItemPendienteDeObservacion}
+  setMostrarModalObservacion={setMostrarModalObservacion}
+  observacionesPorItem={observacionesPorItem}
+  setObservacionesPorItem={setObservacionesPorItem}
+/>
+
 
         <h5 className="mt-4">Observaciones de Choques y/o Rayaduras</h5>
         <DamageDrawing
@@ -400,6 +439,43 @@ export default function PageContent() {
 </button>
         </div>
       </form>
+      {mostrarModalObservacion && itemPendienteDeObservacion && (
+  <div className="modal show d-block" tabIndex={-1} style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
+    <div className="modal-dialog">
+      <div className="modal-content">
+        <div className="modal-header">
+          <h5 className="modal-title">Observación requerida</h5>
+        </div>
+        <div className="modal-body">
+        <p>¿Por qué marcaste <strong>{itemPendienteDeObservacion}</strong> como &quot;M&quot;?</p>
+
+
+          <textarea
+            className="form-control"
+            rows={3}
+            value={observacionesPorItem[itemPendienteDeObservacion] || ""}
+            onChange={(e) =>
+              setObservacionesPorItem(prev => ({
+                ...prev,
+                [itemPendienteDeObservacion]: e.target.value,
+              }))
+            }
+          />
+        </div>
+        <div className="modal-footer">
+          <button
+            className="btn btn-secondary"
+            disabled={!observacionesPorItem[itemPendienteDeObservacion]}
+            onClick={() => setMostrarModalObservacion(false)}
+          >
+            Confirmar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
         </div>
       </div>
     </main>

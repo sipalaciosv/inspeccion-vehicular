@@ -265,6 +265,7 @@ console.log("🔍 ID buscado:", id);
                             <th>Ítem</th>
                             <th>Estado</th>
                             <th>Imagen</th>
+                            <th>Observación</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -291,6 +292,9 @@ console.log("🔍 ID buscado:", id);
                                   "Sin imagen"
                                 )}
                               </td>
+                              <td>
+        {detalle.checklist[`${item}_obs`] || "—"}
+      </td>
                             </tr>
                           ))}
                         </tbody>
