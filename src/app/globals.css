@@ -1,5 +1,7 @@
 @import "bootstrap/dist/css/bootstrap.min.css";
-
+html, body {
+  overscroll-behavior-y: contain;
+}
 /* ==== COLORES CORPORATIVOS ==== */
 :root {
   --color-principal: #F26522;       /* Naranjo buses Tarapacá */

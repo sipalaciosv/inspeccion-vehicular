@@ -24,6 +24,7 @@ interface FormularioFatiga {
   aprobado_por?: string;
   creado_por?: string;
   firma_img?: string;
+  errores: number;
 }
 
 export default function PageContent() {
@@ -297,6 +298,7 @@ export default function PageContent() {
                   <th>Vehículo</th>
                   <th>Fecha</th>
                   <th>Hora</th>
+                  <th>Errores</th>
                   <th>Estado</th>
                   <th>Revisado por</th>
                   <th>Acciones</th>
@@ -311,6 +313,11 @@ export default function PageContent() {
                     <td>{f.numero_interno}</td>
                     <td>{f.fecha}</td>
                     <td>{f.hora_salida}</td>
+                    <td>
+        <span className={`badge bg-${f.errores > 0 ? "danger" : "success"}`}>
+          {f.errores ?? 0}
+        </span>
+      </td>
                     <td>
                       <span className={`badge bg-${f.estado === "aprobado" ? "success" : "danger"}`}>
                         {f.estado}

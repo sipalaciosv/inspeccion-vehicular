@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { db } from "@/firebase";
-import { doc, getDoc } from "firebase/firestore";
-
+import useUserRole from "@/hooks/useUserRole";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { useRouter } from "next/navigation"; 
 interface FormularioFatiga {
   id?: string;
     id_correlativo: number;
@@ -35,10 +36,44 @@ const preguntas = [
 ];
 
 export default function PageContent() {
+  const { role: userRole } = useUserRole();
+const router = useRouter();
+
+const aprobarFormulario = async () => {
+  if (!form?.id) return;
+  try {
+    await updateDoc(doc(db, "fatiga_somnolencia", form.id), {
+      estado: "aprobado",
+      aprobado_por: form.creado_por || "Administrador"
+    });
+    alert("✅ Formulario aprobado");
+    router.push("/admin/solicitudes-fatiga/pendientes");
+  } catch (error) {
+    console.error(error);
+    alert("❌ Error al aprobar el formulario");
+  }
+};
+
+const rechazarFormulario = async () => {
+  if (!form?.id) return;
+  try {
+    await updateDoc(doc(db, "fatiga_somnolencia", form.id), {
+      estado: "rechazado",
+      aprobado_por: form.creado_por || "Administrador"
+    });
+    alert("❌ Formulario rechazado");
+    router.push("/admin/solicitudes-fatiga/pendientes");
+  } catch (error) {
+    console.error(error);
+    alert("❌ Error al rechazar el formulario");
+  }
+};
+
   const params = useParams();
   const [form, setForm] = useState<FormularioFatiga | null>(null);
 
   useEffect(() => {
+    
     const fetchData = async () => {
       const docRef = doc(db, "fatiga_somnolencia", params.id as string);
       const docSnap = await getDoc(docRef);
@@ -115,6 +150,33 @@ export default function PageContent() {
 
         </div>
       </div>
+      {form.estado === "pendiente" && userRole && (
+  <div style={{
+    position: "fixed",
+    bottom: "30px",
+    right: "30px",
+    zIndex: 1000,
+    display: "flex",
+    flexDirection: "column",
+    gap: "10px"
+  }}>
+    <button
+      onClick={aprobarFormulario}
+      className="btn btn-success"
+      style={{ minWidth: "160px" }}
+    >
+      ✅ Aprobar
+    </button>
+    <button
+      onClick={rechazarFormulario}
+      className="btn btn-danger"
+      style={{ minWidth: "160px" }}
+    >
+      ❌ Rechazar
+    </button>
+  </div>
+)}
+
     </div>
   );
 }
