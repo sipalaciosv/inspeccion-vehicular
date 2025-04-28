@@ -60,7 +60,15 @@ export default function AdminNavbar() {
                 <li><Link className="dropdown-item" href="/admin/solicitudes-fatiga/atendidos">Atendidos</Link></li>
               </ul>
             </li>
-
+              
+            {/* Consolidado de Buses */}
+            <li className="nav-item">
+              <Link className="nav-link" href="/admin/consolidado-buses">
+                📋 Consolidado Buses
+              </Link>
+            </li>
+              
+              {/* Reportes Dropdown */}
             {/* Gestión (solo admin) */}
             {role === "admin" && (
               <li className="nav-item dropdown">
@@ -85,6 +93,7 @@ export default function AdminNavbar() {
                 </ul>
               </li>
             )}
+            
 
             {/* 🌐 Panel Público */}
             <li className="nav-item">

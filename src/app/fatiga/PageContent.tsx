@@ -112,7 +112,24 @@ setVehiculos(numerosOrdenados);
       observaciones: { ...prev.observaciones, [index]: value },
     }));
   };
-
+  function contarErrores(respuestas: Record<number, string>): number {
+    let errores = 0;
+    const negativasEsperadas = [5, 7, 8];
+  
+    for (const [indexStr, respuesta] of Object.entries(respuestas)) {
+      const index = Number(indexStr);
+      const esperaNo = negativasEsperadas.includes(index);
+  
+      if (esperaNo && respuesta !== "NO") {
+        errores++;
+      } else if (!esperaNo && respuesta !== "SI") {
+        errores++;
+      }
+    }
+  
+    return errores;
+  }
+  
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (isSubmitting) return;
@@ -155,13 +172,14 @@ if (firmaImg) {
   const firmaData = await firmaRes.json();
   firmaUrl = firmaData.secure_url;
 }
-
+const errores = contarErrores(form.respuestas);
       await addDoc(collection(db, "fatiga_somnolencia"), {
         ...form,
         id_correlativo: idCorrelativo,
         estado: "pendiente",
         creado_por: creadoPorNombre,
-        firma_img: firmaUrl
+        firma_img: firmaUrl,
+        errores, 
       });
 
       alert("✅ Formulario enviado exitosamente");

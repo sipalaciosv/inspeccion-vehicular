@@ -28,6 +28,7 @@ interface FormularioFatiga {
   estado: "pendiente" | "aprobado" | "rechazado";
   creado_por?: string;
   aprobado_por?: string;
+  errores: number;
 }
 
 export default function PageContent() {
@@ -196,6 +197,7 @@ export default function PageContent() {
                   <th>Destino</th>
                   <th>Fecha</th>
                   <th>Hora</th>
+                  <th>Errores</th>
                   <th>Realizado por</th>
                   {(userRole === "admin" || userRole === "controlador") && (
                     <th>Acciones</th>
@@ -212,6 +214,11 @@ export default function PageContent() {
                     <td>{f.destino}</td>
                     <td>{f.fecha}</td>
                     <td>{f.hora_salida}</td>
+                    <td>
+        <span className={`badge bg-${f.errores > 0 ? "danger" : "success"}`}>
+          {f.errores ?? 0} {/* ✅ muestra 0 si no existiera */}
+        </span>
+      </td>
                     <td>{f.creado_por || "N/A"}</td>
                     {(userRole === "admin" || userRole === "controlador") && (
                       <td>
