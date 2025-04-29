@@ -9,7 +9,7 @@ import autoTable, { RowInput } from "jspdf-autotable";
 interface jsPDFWithAutoTable extends jsPDF {
   autoTable: (options: {
     startY?: number;
-    head: (string[])[];
+    head: (string[])[]; 
     body: RowInput[];
     [key: string]: unknown;
   }) => void;
@@ -26,6 +26,13 @@ interface ChecklistDetalle {
   checklist: Record<string, string>;
 }
 
+// ⚡ NUEVO: Ítems que deben ser ignorados en el PDF
+const accesoriosSeguridad = [
+  "Conos de seguridad (3)", "Extintor (pasillo y cabina)", "Gata hidráulica",
+  "Chaleco reflectante", "Cuñas de seguridad (2)", "Botiquín", "Llave de rueda",
+  "Barrote de llave rueda", "Tubo de fuerza (1 metro)", "Multiplicador de fuerza", "Triangulos de seguridad (2)"
+];
+
 export default function PageContent() {
   const [fechaDesde, setFechaDesde] = useState("");
   const [fechaHasta, setFechaHasta] = useState("");
@@ -40,15 +47,14 @@ export default function PageContent() {
     setLoading(true);
 
     try {
+      const desde = new Date(fechaDesde);
+      const hasta = new Date(fechaHasta);
+      hasta.setHours(23, 59, 59, 999);
+
       const snapshot = await getDocs(collection(db, "checklist_atendidos"));
       const formularios = snapshot.docs
         .map(doc => ({ id: doc.id, ...doc.data() } as ChecklistGeneral))
-        .filter(c => {
-          const fecha = new Date(c.fecha_inspeccion);
-          const desde = new Date(fechaDesde);
-          const hasta = new Date(fechaHasta);
-          return fecha >= desde && fecha <= hasta;
-        });
+        .filter(f => f.fecha_inspeccion >= fechaDesde && f.fecha_inspeccion <= fechaHasta);
 
       if (formularios.length === 0) {
         alert("❌ No se encontraron formularios en el rango.");
@@ -56,27 +62,39 @@ export default function PageContent() {
         return;
       }
 
-      const buses: Record<string, { observaciones: [string, string, string][], imagenes: Record<string, string> }> = {};
+      const buses: Record<string, {
+        observaciones: Record<string, { texto: string; fecha: string }>,
+        imagenes: Record<string, string>
+      }> = {};
 
       for (const form of formularios) {
-        const q = query(collection(db, "checklist_detalle"), where("id_formulario", "==", form.id));
-        const detalleSnap = await getDocs(q);
+        const detalleSnap = await getDocs(
+          query(collection(db, "checklist_detalle"), where("id_formulario", "==", form.id))
+        );
 
         if (!detalleSnap.empty) {
           const data = detalleSnap.docs[0].data() as ChecklistDetalle;
 
           if (!buses[form.numero_interno]) {
-            buses[form.numero_interno] = { observaciones: [], imagenes: {} };
+            buses[form.numero_interno] = { observaciones: {}, imagenes: {} };
           }
 
-          for (const [item, valor] of Object.entries(data.checklist)) {
-            if (item.endsWith("_obs") && valor.trim() !== "") {
-              const nombreItem = item.replace("_obs", "");
-              buses[form.numero_interno].observaciones.push([nombreItem, valor, form.fecha_inspeccion]);
+          for (const [key, valor] of Object.entries(data.checklist)) {
+            if (key.endsWith("_obs") && valor.trim() !== "") {
+              const item = key.replace("_obs", "");
+              const actual = buses[form.numero_interno].observaciones[item];
+
+              if (!actual || form.fecha_inspeccion > actual.fecha) {
+                buses[form.numero_interno].observaciones[item] = {
+                  texto: valor,
+                  fecha: form.fecha_inspeccion,
+                };
+              }
             }
-            if (item.endsWith("_img") && valor.startsWith("https")) {
-              const nombreItem = item.replace("_img", "");
-              buses[form.numero_interno].imagenes[nombreItem] = valor;
+
+            if (key.endsWith("_img") && valor.startsWith("https")) {
+              const item = key.replace("_img", "");
+              buses[form.numero_interno].imagenes[item] = valor;
             }
           }
         }
@@ -91,7 +109,10 @@ export default function PageContent() {
     }
   };
 
-  const generarPDF = async (buses: Record<string, { observaciones: [string, string, string][], imagenes: Record<string, string> }>) => {
+  const generarPDF = async (buses: Record<string, {
+    observaciones: Record<string, { texto: string; fecha: string }>,
+    imagenes: Record<string, string>
+  }>) => {
     const doc = new jsPDF("p", "mm", "a4") as jsPDFWithAutoTable;
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
@@ -113,7 +134,6 @@ export default function PageContent() {
     };
 
     doc.addImage(logo, "PNG", 14, 10, 30, 20);
-
     doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
     doc.text("Consolidado de Hallazgos por Buses", pageWidth / 2, 20, { align: "center" });
@@ -132,7 +152,16 @@ export default function PageContent() {
       doc.text(`Bus número interno Nº ${numeroInterno}`, 14, y);
       y += 6;
 
-      if (observaciones.length === 0) {
+      // ✨ Filtramos aquí los accesorios
+      const data = Object.entries(observaciones)
+        .filter(([item]) => !accesoriosSeguridad.includes(item))
+        .map(([item, obs]) => [
+          item,
+          obs.texto,
+          obs.fecha
+        ]);
+
+      if (data.length === 0) {
         doc.setFont("helvetica", "normal");
         doc.setFontSize(11);
         doc.text("✅ Este bus no presentó hallazgos en el rango de fechas.", 14, y);
@@ -147,8 +176,8 @@ export default function PageContent() {
 
       autoTable(doc, {
         startY: y,
-        head: [["Ítem", "Observación", "Fecha"]],
-        body: observaciones.map(([item, observacion, fecha]) => [item, observacion, new Date(fecha).toLocaleDateString("es-CL")]),
+        head: [["Ítem", "Observación", "Última Fecha"]],
+        body: data,
         styles: { fontSize: 10, cellPadding: 1.5 },
         headStyles: { fillColor: [255, 204, 0], textColor: 0 },
         bodyStyles: { halign: "left" },
@@ -158,7 +187,10 @@ export default function PageContent() {
       y = (doc.lastAutoTable?.finalY ?? y) + 8;
 
       for (const [item, url] of Object.entries(imagenes)) {
+        if (!observaciones[item]) continue;
         if (item === "firma") continue;
+        if (accesoriosSeguridad.includes(item)) continue; // ❗ También evitamos cargar su imagen
+
         if (y + 70 > pageHeight - 20) { doc.addPage(); y = 20; }
 
         doc.setFont("helvetica", "normal");
@@ -203,28 +235,14 @@ export default function PageContent() {
           <div className="row mb-4">
             <div className="col-md-5">
               <label className="form-label">Desde</label>
-              <input
-                type="date"
-                className="form-control"
-                value={fechaDesde}
-                onChange={(e) => setFechaDesde(e.target.value)}
-              />
+              <input type="date" className="form-control" value={fechaDesde} onChange={e => setFechaDesde(e.target.value)} />
             </div>
             <div className="col-md-5">
               <label className="form-label">Hasta</label>
-              <input
-                type="date"
-                className="form-control"
-                value={fechaHasta}
-                onChange={(e) => setFechaHasta(e.target.value)}
-              />
+              <input type="date" className="form-control" value={fechaHasta} onChange={e => setFechaHasta(e.target.value)} />
             </div>
             <div className="col-md-2 d-flex align-items-end">
-              <button
-                className="btn btn-primary w-100"
-                onClick={buscarChecklist}
-                disabled={loading}
-              >
+              <button className="btn btn-primary w-100" onClick={buscarChecklist} disabled={loading}>
                 {loading ? "Generando..." : "Generar PDF"}
               </button>
             </div>
