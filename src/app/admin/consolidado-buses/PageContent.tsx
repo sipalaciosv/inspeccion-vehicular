@@ -47,7 +47,7 @@ export default function PageContent() {
     setLoading(true);
 
     try {
-      const desde = new Date(fechaDesde);
+      
       const hasta = new Date(fechaHasta);
       hasta.setHours(23, 59, 59, 999);
 
