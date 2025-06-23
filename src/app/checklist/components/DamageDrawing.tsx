@@ -128,26 +128,25 @@ export default function DamageDrawing({ onSave, resetKey, clearPreview = false }
             />
           </div>
 
-          <div style={{ position: "relative", width: "100%", height: "auto" }}>
-          <Image
-  src="/bus1.jpg"
-  alt="Bus"
-  layout="responsive"
-  width={1000}
-  height={500}
-  style={{ border: "1px solid #ccc" }}
-/>
+          <div style={{ position: "relative", width: "100%", aspectRatio: "736 / 354" }}>
+  <Image
+    src="/bus1.jpg"
+    alt="Bus"
+    fill
+    style={{ objectFit: "contain", border: "1px solid #ccc", zIndex: 1 }}
+    sizes="(max-width: 1200px) 100vw, 736px"
+  />
+  <div style={{ position: "absolute", inset: 0, zIndex: 2 }}>
+    <ReactSketchCanvas
+      ref={canvasRef}
+      strokeWidth={strokeWidth}
+      strokeColor="red"
+      canvasColor="transparent"
+      style={{ width: "100%", height: "100%" }}
+    />
+  </div>
+</div>
 
-            <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}>
-              <ReactSketchCanvas
-                ref={canvasRef}
-                strokeWidth={strokeWidth}
-                strokeColor="red"
-                canvasColor="transparent"
-                style={{ width: "100%", height: "100%" }}
-              />
-            </div>
-          </div>
         </Modal.Body>
 
         <Modal.Footer>
