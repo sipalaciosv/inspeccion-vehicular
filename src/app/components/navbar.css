@@ -1,0 +1,36 @@
+.storage-warning {
+  background: linear-gradient(90deg, #fff3cd 80%, #ffdddd 100%);
+  color: #a15907;
+  text-align: center;
+  padding: 12px 0 20px 0;
+  font-size: 1.05rem;
+  font-family: 'Montserrat', Arial, sans-serif;
+  letter-spacing: .03em;
+  box-shadow: 0 1px 6px 0 rgba(190, 70, 8, 0.06);
+  position: relative;
+  z-index: 20;
+}
+
+.storage-warning-text {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.storage-bar-bg {
+  width: 90%;
+  height: 10px;
+  margin: 0 auto;
+  background: #f9e89f;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 0 0 2px #fff6e1 inset;
+}
+
+.storage-bar-fill {
+  height: 100%;
+  width: 92%;   /* Fijo en 92% */
+  background: linear-gradient(90deg, #fda085 60%, #f85032 100%);
+  border-radius: 8px 0 0 8px;
+  box-shadow: 0 0 6px 0 #f8503280;
+  transition: width 0.7s cubic-bezier(.44,2,.15,.87);
+}
